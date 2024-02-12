@@ -7,8 +7,8 @@ int main (int argc, char * argv [])
 {
 	TRACE (true);
 
-	Plan * const plan = new ScanPlan (7);
-	// new SortPlan ( new FilterPlan ( new ScanPlan (7) ) );
+	// Plan * const plan = new ScanPlan (7);
+	Plan * const plan = new SortPlan ( new FilterPlan ( new ScanPlan (7) ) );
 
 	Iterator * const it = plan->init ();
 	it->run ();

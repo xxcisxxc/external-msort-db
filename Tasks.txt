@@ -14,7 +14,7 @@ Milestones :
 Trace existing code
 Disable (not remove!) excessive tracing output
 Define class for data records
-Add data records (incl mem mgmt) to iterators
+Add data records (incl mem mgmt) to iterators (include memory management?)
 Add data generation (random values) in ScanIterator
 Test with simple plan -- scan only
 Add predicate evaluation to FilterIterator
