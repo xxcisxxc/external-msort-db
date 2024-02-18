@@ -32,4 +32,5 @@
 *.app
 
 .vscode
+.cache
 compile_commands.json

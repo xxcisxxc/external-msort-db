@@ -30,14 +30,16 @@ compile_commands.json : Makefile $(SRCS) $(HDRS)
 	@echo -n > compile_commands.json
 	@echo "[" >> compile_commands.json
 	@for file in $(SRCS) ; do \
-		echo -n "  { \"directory\": \"`pwd`\", \"command\": \"$(CPP) $(CPPFLAGS) -c $$file\", \"file\": \"$$file\" }," >> compile_commands.json ; \
+		if [ $$file = `echo $(SRCS) | awk '{print $$NF}'` ] ; then \
+			echo -n "  { \"directory\": \"`pwd`\", \"command\": \"$(CPP) $(CPPFLAGS) -c $$file\", \"file\": \"$$file\" }" >> compile_commands.json ; \
+		else \
+			echo -n "  { \"directory\": \"`pwd`\", \"command\": \"$(CPP) $(CPPFLAGS) -c $$file\", \"file\": \"$$file\" }," >> compile_commands.json ; \
+		fi ; \
 		echo >> compile_commands.json ; \
 	done
-	@echo "{}" >> compile_commands.json
 	@echo "]" >> compile_commands.json
 
-# default target
-#
+
 Test.exe : Makefile $(OBJS)
 	$(CPP) $(CPPFLAGS) -o Test.exe $(OBJS)
 
