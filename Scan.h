@@ -1,23 +1,24 @@
 #include "Iterator.h"
 
-class ScanPlan : public Plan
-{
-	friend class ScanIterator;
+class ScanPlan : public Plan {
+  friend class ScanIterator;
+
 public:
-	ScanPlan (RowCount const count);
-	~ScanPlan ();
-	Iterator * init () const;
+  ScanPlan(RowCount const count);
+  ~ScanPlan();
+  Iterator *init() const;
+
 private:
-	RowCount const _count;
+  RowCount const _count;
 }; // class ScanPlan
 
-class ScanIterator : public Iterator
-{
+class ScanIterator : public Iterator {
 public:
-	ScanIterator (ScanPlan const * const plan);
-	~ScanIterator ();
-	bool next ();
+  ScanIterator(ScanPlan const *const plan);
+  ~ScanIterator();
+  bool next();
+
 private:
-	ScanPlan const * const _plan;
-	RowCount _count;
+  ScanPlan const *const _plan;
+  RowCount _count;
 }; // class ScanIterator

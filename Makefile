@@ -1,3 +1,4 @@
+CPP=g++
 CPPOPT=-g -Og -D_DEBUG
 # -O2 -Os -Ofast
 # -fprofile-generate -fprofile-use
@@ -9,6 +10,11 @@ CPPFLAGS=$(CPPOPT) -Wall -ansi -pedantic
 DOCS=Tasks.txt
 SCRS=
 
+.PHONY : all trace list count clean
+
+# default target
+all : Test.exe compile_commands.json
+
 # headers and code sources
 HDRS=	defs.h \
 		Iterator.h Scan.h Filter.h Sort.h
@@ -19,14 +25,21 @@ SRCS=	defs.cpp Assert.cpp Test.cpp \
 OBJS=	defs.o Assert.o Test.o \
 		Iterator.o Scan.o Filter.o Sort.o
 
-# RCS assists
-REV=-q -f
-MSG=no message
+# generate compile_commands.json for clangd
+compile_commands.json : Makefile $(SRCS) $(HDRS)
+	@echo -n > compile_commands.json
+	@echo "[" >> compile_commands.json
+	@for file in $(SRCS) ; do \
+		echo -n "  { \"directory\": \"`pwd`\", \"command\": \"$(CPP) $(CPPFLAGS) -c $$file\", \"file\": \"$$file\" }," >> compile_commands.json ; \
+		echo >> compile_commands.json ; \
+	done
+	@echo "{}" >> compile_commands.json
+	@echo "]" >> compile_commands.json
 
 # default target
 #
 Test.exe : Makefile $(OBJS)
-	g++ $(CPPFLAGS) -o Test.exe $(OBJS)
+	$(CPP) $(CPPFLAGS) -o Test.exe $(OBJS)
 
 trace : Test.exe Makefile
 	@date > trace
@@ -45,11 +58,5 @@ list : Makefile
 count : list
 	@wc `cat list`
 
-ci :
-	ci $(REV) -m"$(MSG)" $(HDRS) $(SRCS) $(DOCS) $(SCRS)
-	ci -l $(REV) -m"$(MSG)" Makefile
-co :
-	co $(REV) -l $(HDRS) $(SRCS) $(DOCS) $(SCRS)
-
 clean :
-	@rm -f $(OBJS) Test.exe Test.exe.stackdump trace
+	@rm -f $(OBJS) Test.exe Test.exe.stackdump trace compile_commands.json
