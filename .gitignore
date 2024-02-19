@@ -34,3 +34,4 @@
 .vscode
 .cache
 .idea
+compile_commands.json

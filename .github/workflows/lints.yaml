@@ -10,11 +10,13 @@ jobs:
       contents: read # For repo checkout
 
     steps:
+      - name: Download Bear
+        run: sudo apt-get update && sudo apt-get install bear -y
       - name: Checkout
         uses: actions/checkout@v3
 
       - name: Run Tests
-        run: make -j$(nproc) all
+        run: bear make -j$(nproc) all
 
       - name: Trunk Check
         uses: trunk-io/trunk-action@v1
