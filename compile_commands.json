@@ -1,0 +1,153 @@
+[
+    {
+        "arguments": [
+            "g++",
+            "-c",
+            "-g",
+            "-Og",
+            "-Wall",
+            "-Wextra",
+            "-std=c++17",
+            "-o",
+            "defs.o",
+            "defs.cpp"
+        ],
+        "directory": "/workspaces/external-msort-db",
+        "file": "defs.cpp"
+    },
+    {
+        "arguments": [
+            "g++",
+            "-c",
+            "-g",
+            "-Og",
+            "-Wall",
+            "-Wextra",
+            "-std=c++17",
+            "-o",
+            "catch2/catch_amalgamated.o",
+            "catch2/catch_amalgamated.cpp"
+        ],
+        "directory": "/workspaces/external-msort-db",
+        "file": "catch2/catch_amalgamated.cpp"
+    },
+    {
+        "arguments": [
+            "g++",
+            "-c",
+            "-g",
+            "-Og",
+            "-Wall",
+            "-Wextra",
+            "-std=c++17",
+            "defs.o",
+            "Assert.o",
+            "Iterator.o",
+            "Scan.o",
+            "Filter.o",
+            "Sort.o",
+            "-o",
+            "Test.exe",
+            "Test.cpp"
+        ],
+        "directory": "/workspaces/external-msort-db",
+        "file": "Test.cpp"
+    },
+    {
+        "arguments": [
+            "g++",
+            "-c",
+            "-g",
+            "-Og",
+            "-Wall",
+            "-Wextra",
+            "-std=c++17",
+            "-o",
+            "Filter.o",
+            "Filter.cpp"
+        ],
+        "directory": "/workspaces/external-msort-db",
+        "file": "Filter.cpp"
+    },
+    {
+        "arguments": [
+            "g++",
+            "-c",
+            "-g",
+            "-Og",
+            "-Wall",
+            "-Wextra",
+            "-std=c++17",
+            "-o",
+            "Sort.o",
+            "Sort.cpp"
+        ],
+        "directory": "/workspaces/external-msort-db",
+        "file": "Sort.cpp"
+    },
+    {
+        "arguments": [
+            "g++",
+            "-c",
+            "-g",
+            "-Og",
+            "-Wall",
+            "-Wextra",
+            "-std=c++17",
+            "-o",
+            "Assert.o",
+            "Assert.cpp"
+        ],
+        "directory": "/workspaces/external-msort-db",
+        "file": "Assert.cpp"
+    },
+    {
+        "arguments": [
+            "g++",
+            "-c",
+            "-g",
+            "-Og",
+            "-Wall",
+            "-Wextra",
+            "-std=c++17",
+            "-o",
+            "Iterator.o",
+            "Iterator.cpp"
+        ],
+        "directory": "/workspaces/external-msort-db",
+        "file": "Iterator.cpp"
+    },
+    {
+        "arguments": [
+            "g++",
+            "-c",
+            "-g",
+            "-Og",
+            "-Wall",
+            "-Wextra",
+            "-std=c++17",
+            "-I.",
+            "-o",
+            "tests/test_record.o",
+            "tests/test_record.cpp"
+        ],
+        "directory": "/workspaces/external-msort-db",
+        "file": "tests/test_record.cpp"
+    },
+    {
+        "arguments": [
+            "g++",
+            "-c",
+            "-g",
+            "-Og",
+            "-Wall",
+            "-Wextra",
+            "-std=c++17",
+            "-o",
+            "Scan.o",
+            "Scan.cpp"
+        ],
+        "directory": "/workspaces/external-msort-db",
+        "file": "Scan.cpp"
+    }
+]

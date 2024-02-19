@@ -9,7 +9,7 @@ DOCS=Tasks.txt
 SCRS=
 
 # default target
-all : Test.exe
+all : test Test.exe
 
 # headers and code sources
 HDRS=	defs.h \
