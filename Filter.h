@@ -1,4 +1,5 @@
 #include "Iterator.h"
+#include "Record.h"
 
 class FilterPlan : public Plan {
   friend class FilterIterator;
@@ -6,10 +7,13 @@ class FilterPlan : public Plan {
 public:
   FilterPlan(Plan *const input);
   ~FilterPlan();
-  Iterator *init() const;
+  Iterator *init() const override;
+  inline RecordArr_t const &records() const override { return _records; }
 
 private:
   Plan *const _input;
+  /* One Run */
+  RecordArr_t const &_records;
 }; // class FilterPlan
 
 class FilterIterator : public Iterator {

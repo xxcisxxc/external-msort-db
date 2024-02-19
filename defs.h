@@ -47,7 +47,11 @@ private:
   int const _line;
 }; // class Trace
 
+#if defined(_DEBUG) || defined(_DEBUG)
 #define TRACE(trace) Trace __trace(trace, __FUNCTION__, __FILE__, __LINE__)
+#else // _DEBUG _DEBUG
+#define TRACE(trace) (void)(0)
+#endif // _DEBUG _DEBUG
 
 // -----------------------------------------------------------------
 

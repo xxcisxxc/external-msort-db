@@ -1,6 +1,7 @@
 #include "Filter.h"
 
-FilterPlan::FilterPlan(Plan *const input) : _input(input) {
+FilterPlan::FilterPlan(Plan *const input)
+    : _input(input), _records(input->records()) {
   TRACE(true);
 } // FilterPlan::FilterPlan
 
@@ -35,7 +36,7 @@ bool FilterIterator::next() {
     if (!_input->next())
       return false;
     ++_consumed;
-  } while (_consumed % 2 == 0);
+  } while (_consumed % kCacheRunSize == 0);
 
   ++_produced;
   return true;

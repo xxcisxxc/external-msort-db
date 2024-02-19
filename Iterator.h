@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Record.h"
 #include "defs.h"
 
 typedef uint64_t RowCount;
@@ -11,6 +12,7 @@ public:
   Plan();
   virtual ~Plan();
   virtual class Iterator *init() const = 0;
+  virtual RecordArr_t const &records() const = 0;
 
 private:
 }; // class Plan
@@ -25,3 +27,5 @@ public:
 private:
   RowCount _count;
 }; // class Iterator
+
+constexpr std::size_t kCacheRunSize = 2;

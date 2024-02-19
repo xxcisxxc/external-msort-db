@@ -1,6 +1,8 @@
 #include "Sort.h"
+#include "Record.h"
 
-SortPlan::SortPlan(Plan *const input) : _input(input) {
+SortPlan::SortPlan(Plan *const input)
+    : _input(input), _records(input->records()) {
   TRACE(true);
 } // SortPlan::SortPlan
 
@@ -32,11 +34,22 @@ SortIterator::~SortIterator() {
               (unsigned long)(_consumed));
 } // SortIterator::~SortIterator
 
+void simple_sort(RecordArr_t &records, std::size_t const size) {
+  std::qsort(records.data(), size, Record_t::bytes,
+             [](void const *a, void const *b) {
+               return reinterpret_cast<Record_t const *>(a)->key -
+                      reinterpret_cast<Record_t const *>(b)->key;
+             });
+} // simple_merge_sort
+
 bool SortIterator::next() {
   TRACE(true);
 
-  if (_produced >= _consumed)
+  RecordArr_t records = _plan->_records;
+  if (_produced >= _consumed) {
+    simple_sort(records, _consumed * kCacheRunSize);
     return false;
+  }
 
   ++_produced;
   return true;

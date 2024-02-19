@@ -1,4 +1,5 @@
 #include "Iterator.h"
+#include "Record.h"
 
 class SortPlan : public Plan {
   friend class SortIterator;
@@ -6,10 +7,14 @@ class SortPlan : public Plan {
 public:
   SortPlan(Plan *const input);
   ~SortPlan();
-  Iterator *init() const;
+  Iterator *init() const override;
+  inline RecordArr_t const &records() const override {
+    return _input->records();
+  }
 
 private:
   Plan *const _input;
+  RecordArr_t const &_records;
 }; // class SortPlan
 
 class SortIterator : public Iterator {
