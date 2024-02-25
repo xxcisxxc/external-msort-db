@@ -14,7 +14,7 @@ all : test Test.exe
 # headers and code sources
 HDRS=	defs.h \
 		Iterator.h Scan.h Filter.h Sort.h \
-		Record.h
+		Record.h Device.h
 SRCS=	defs.cpp Assert.cpp \
 		Iterator.cpp Scan.cpp Filter.cpp Sort.cpp
 
@@ -36,7 +36,7 @@ count :
 	@wc Makefile $(HDRS) $(SRCS) $(DOCS) $(SCRS) | sort -n
 
 TEST_DIR=tests
-TEST_SRCS=$(TEST_DIR)/test_record.cpp
+TEST_SRCS=$(TEST_DIR)/test_record.cpp $(TEST_DIR)/test_device.cpp
 TEST_OBJS=$(TEST_SRCS:.cpp=.o)
 TEST_TARGETS=$(TEST_SRCS:.cpp=)
 TEST_LIBS=catch2/catch_amalgamated.o
