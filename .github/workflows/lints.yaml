@@ -1,0 +1,22 @@
+name: Lint Checkings
+on: [push, pull_request]
+permissions: read-all
+jobs:
+  trunk_check:
+    name: Trunk Check Runner
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write # For trunk to post annotations
+      contents: read # For repo checkout
+
+    steps:
+      - name: Download Bear
+        run: sudo apt-get update && sudo apt-get install bear -y
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Run Tests
+        run: bear -- make -j${nproc} all
+
+      - name: Trunk Check
+        uses: trunk-io/trunk-action@v1

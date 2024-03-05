@@ -1,20 +1,29 @@
-#include "Iterator.h"
-#include "Scan.h"
 #include "Filter.h"
+#include "Iterator.h"
+#include "Record.h"
+#include "Scan.h"
 #include "Sort.h"
 
-int main (int argc, char * argv [])
-{
-	TRACE (true);
+constexpr std::size_t kCount = 8;
+constexpr std::size_t kSize = 8;
 
-	// Plan * const plan = new ScanPlan (7);
-	Plan * const plan = new SortPlan ( new FilterPlan ( new ScanPlan (7) ) );
+int main(/*int argc, char *argv[]*/) {
+  TRACE(true);
 
-	Iterator * const it = plan->init ();
-	it->run ();
-	delete it;
+  Record_t::bytes = kSize;
 
-	delete plan;
+  // Plan * const plan = new ScanPlan (7);
+  Plan *const plan = new SortPlan(new FilterPlan(new ScanPlan(kCount)));
 
-	return 0;
+  Iterator *const it = plan->init();
+  it->run();
+  delete it;
+
+  const RecordArr_t &records = plan->records();
+  for (uint32_t i = 0; i < kCount; ++i)
+    traceprintf("record %d: %d\n", i, records[i].key);
+
+  delete plan;
+
+  return 0;
 } // main
