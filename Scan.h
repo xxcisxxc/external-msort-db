@@ -9,6 +9,7 @@ public:
   ~ScanPlan();
   Iterator *init() const override;
   RecordArr_t const &records() const override { return _records; }
+  Record_t *witnessRecord = new Record_t;
 
 private:
   RowCount const _count;

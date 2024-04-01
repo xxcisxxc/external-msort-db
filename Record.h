@@ -5,6 +5,7 @@
 #include <memory>
 #include <new>
 #include <stdexcept>
+#include <cstring>
 
 /**
  * @brief A Record is a key-value pair.
@@ -52,6 +53,11 @@ template <class Key = int, class Val = char> struct Record {
   static inline void operator delete(void *const ptr) { free(ptr); }
 
   static inline void operator delete[](void *const ptr) { free(ptr); }
+
+  static void copy_rec(Record source, Record *destination) {
+    destination->key = source.key;
+    std::memcpy(destination->val, source.val, bytes - sizeof(Key));
+  }
 };
 
 /**

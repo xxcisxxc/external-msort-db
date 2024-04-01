@@ -40,6 +40,12 @@ bool ScanIterator::next() {
 
   RecordArr_t records = _plan->_records;
   random_generate(records[_count]);
+  // if this is the first record make it the first record in witness
+  if(_count == 0) {
+    Record_t::copy_rec(records[_count], _plan->witnessRecord);
+  } else {
+    _plan->witnessRecord->x_or(records[_count]);
+  }
 
   traceprintf("produced %lu - %d: %d\n", (unsigned long)(_count),
               _plan->_records[_count].key, (int)_plan->_records[_count].val[0]);
