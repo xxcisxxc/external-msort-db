@@ -1,4 +1,5 @@
 #include "Iterator.h"
+#include "defs.h"
 
 Plan::Plan() { TRACE(true); } // Plan::Plan
 

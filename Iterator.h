@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Record.h"
-#include "defs.h"
 
 typedef uint64_t RowCount;
 
@@ -27,5 +26,3 @@ public:
 private:
   RowCount _count;
 }; // class Iterator
-
-constexpr std::size_t kCacheRunSize = 2;

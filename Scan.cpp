@@ -1,9 +1,15 @@
 #include "Scan.h"
+#include "Consts.h"
 #include "Record.h"
+#include "Utils.h"
 #include "defs.h"
 #include <climits>
 
-ScanPlan::ScanPlan(RowCount const count) : _count(count), _records(count) {
+ScanPlan::ScanPlan(RowCount const count)
+    : _count(count),
+      _rcache(std::shared_ptr<Record_t>(
+                  reinterpret_cast<Record_t *>(new char[kCacheSize])),
+              kCacheSize / Record_t::bytes) {
   TRACE(true);
 } // ScanPlan::ScanPlan
 
@@ -15,7 +21,7 @@ Iterator *ScanPlan::init() const {
 } // ScanPlan::init
 
 ScanIterator::ScanIterator(ScanPlan const *const plan)
-    : _plan(plan), _count(0) {
+    : _plan(plan), _count(0), _kRowCache(cache_nrecords()) {
   TRACE(true);
 } // ScanIterator::ScanIterator
 
@@ -26,9 +32,8 @@ ScanIterator::~ScanIterator() {
 } // ScanIterator::~ScanIterator
 
 void random_generate(Record_t &record) {
-  record.key = std::rand();
   for (std::size_t i = 0; i < record.bytes; ++i)
-    reinterpret_cast<char *>(record.val)[i] =
+    reinterpret_cast<char *>(record.key)[i] =
         std::rand() % (CHAR_MAX - CHAR_MIN + 1);
 } // random_generate
 
@@ -38,11 +43,11 @@ bool ScanIterator::next() {
   if (_count >= _plan->_count)
     return false;
 
-  RecordArr_t records = _plan->_records;
-  random_generate(records[_count]);
+  RecordArr_t records = _plan->_rcache;
+  random_generate(records[_count % _kRowCache]);
 
-  traceprintf("produced %lu - %d: %d\n", (unsigned long)(_count),
-              _plan->_records[_count].key, (int)_plan->_records[_count].val[0]);
+  traceprintf("produced %lu - %d %d\n", (unsigned long)(_count),
+              _plan->_rcache[_count].key[0], _plan->_rcache[_count].key[1]);
 
   ++_count;
   return true;

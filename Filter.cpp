@@ -1,7 +1,9 @@
 #include "Filter.h"
+#include "Consts.h"
+#include "defs.h"
 
 FilterPlan::FilterPlan(Plan *const input)
-    : _input(input), _records(input->records()) {
+    : _input(input) /*, _records(input->records())*/ {
   TRACE(true);
 } // FilterPlan::FilterPlan
 
@@ -16,7 +18,8 @@ Iterator *FilterPlan::init() const {
 } // FilterPlan::init
 
 FilterIterator::FilterIterator(FilterPlan const *const plan)
-    : _plan(plan), _input(plan->_input->init()), _consumed(0), _produced(0) {
+    : _plan(plan), _input(plan->_input->init()), _consumed(0), _produced(0),
+      _kRowCache(kCacheSize) {
   TRACE(true);
 } // FilterIterator::FilterIterator
 
@@ -36,7 +39,7 @@ bool FilterIterator::next() {
     if (!_input->next())
       return false;
     ++_consumed;
-  } while (_consumed % kCacheRunSize == 0);
+  } while (_consumed % kCacheSize != 0);
 
   ++_produced;
   return true;

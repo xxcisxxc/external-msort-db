@@ -8,11 +8,12 @@ public:
   ScanPlan(RowCount const count);
   ~ScanPlan();
   Iterator *init() const override;
-  RecordArr_t const &records() const override { return _records; }
+  inline RecordArr_t const &records() const override { return _rcache; }
 
 private:
   RowCount const _count;
-  RecordArr_t const _records;
+  // Cache-resident records
+  RecordArr_t const _rcache;
 }; // class ScanPlan
 
 class ScanIterator : public Iterator {
@@ -24,4 +25,6 @@ public:
 private:
   ScanPlan const *const _plan;
   RowCount _count;
+  // max number of rows in cache
+  const RowCount _kRowCache;
 }; // class ScanIterator

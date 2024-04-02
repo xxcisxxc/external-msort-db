@@ -1,5 +1,5 @@
 #include "Iterator.h"
-#include "Record.h"
+// #include "Record.h"
 
 class FilterPlan : public Plan {
   friend class FilterIterator;
@@ -8,12 +8,12 @@ public:
   FilterPlan(Plan *const input);
   ~FilterPlan();
   Iterator *init() const override;
-  inline RecordArr_t const &records() const override { return _records; }
+  // inline RecordArr_t const &records() const override { return _records; }
 
 private:
   Plan *const _input;
   /* One Run */
-  RecordArr_t const &_records;
+  // RecordArr_t const &_records;
 }; // class FilterPlan
 
 class FilterIterator : public Iterator {
@@ -26,4 +26,6 @@ private:
   FilterPlan const *const _plan;
   Iterator *const _input;
   RowCount _consumed, _produced;
+  // max number of rows in cache
+  RowCount const _kRowCache;
 }; // class FilterIterator
