@@ -47,7 +47,7 @@ bool SortIterator::next() {
       break;
     }
     ++_consumed;
-  } while (_consumed % 4 != 0);
+  } while (_consumed % 8 != 0); // run_size: 8
 
   if (_produced >= _consumed) {
     return false;
@@ -57,11 +57,11 @@ bool SortIterator::next() {
   incache_sort(records, work, indext, _consumed - _produced);
   _produced = _consumed;
 
-  if (_consumed % 8 == 0) {
+  if (_consumed % 24 == 0) { // run_size * n_runs: 8 * 3
     Index_r indexr = _plan->_icache.index;
     RecordArr_t in = _plan->_rmem.work;
     RecordArr_t out = _plan->_rmem.out;
-    inmem_merge(in, out, indexr, 4, 2);
+    inmem_merge(in, out, indexr, 8, 3);
   }
 
   return true;

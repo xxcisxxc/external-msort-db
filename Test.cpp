@@ -5,7 +5,7 @@
 #include "Sort.h"
 #include "defs.h"
 
-constexpr std::size_t kCount = 8;
+constexpr std::size_t kCount = 24;
 constexpr std::size_t kSize = 20;
 
 int main(/*int argc, char *argv[]*/) {
