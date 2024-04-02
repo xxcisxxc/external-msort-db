@@ -14,13 +14,16 @@ all : test Test.exe
 # headers and code sources
 HDRS=	defs.h \
 		Iterator.h Scan.h Filter.h Sort.h \
-		Record.h Device.h
+		Record.h Device.h SortFunc.h Consts.h \
+		Utils.h
 SRCS=	defs.cpp Assert.cpp \
-		Iterator.cpp Scan.cpp Filter.cpp Sort.cpp
+		Iterator.cpp Scan.cpp Filter.cpp Sort.cpp \
+		SortFunc.cpp
 
 # compilation targets
 OBJS=	defs.o Assert.o \
-		Iterator.o Scan.o Filter.o Sort.o
+		Iterator.o Scan.o Filter.o Sort.o \
+		SortFunc.o
 
 Test.exe : Makefile $(OBJS) Test.cpp $(HDRS)
 	$(CPP) $(CPPFLAGS) -o Test.exe Test.cpp $(OBJS)
