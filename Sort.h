@@ -1,8 +1,10 @@
 #include "Consts.h"
+#include "Device.h"
 #include "Iterator.h"
 #include "Record.h"
 #include "Utils.h"
 #include <cstdint>
+#include <memory>
 
 class SortPlan : public Plan {
   friend class SortIterator;
@@ -41,6 +43,9 @@ private:
   CacheRun _rcache;
   CacheInd _icache;
   MemRun _rmem;
+
+  std::unique_ptr<Device> ssd;
+  std::unique_ptr<Device> hdd;
 }; // class SortPlan
 
 class SortIterator : public Iterator {
@@ -53,5 +58,7 @@ private:
   SortPlan const *const _plan;
   Iterator *const _input;
   RowCount _consumed, _produced;
-  RowCount const _kRowCache;
+  RowCount const _kRowCacheRun;
+  RowCount const _kRowMemRun;
+  RowCount const _kRowMemOut;
 }; // class SortIterator
