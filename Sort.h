@@ -14,6 +14,9 @@ public:
   ~SortPlan();
   Iterator *init() const override;
   inline RecordArr_t const &records() const override { return _rmem.out; }
+  Record_t *outputWitnessRecord = new Record_t;
+  virtual Record_t *witnessRecord() const override { return outputWitnessRecord; }
+
 
 private:
   struct CacheRun {

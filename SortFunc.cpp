@@ -61,7 +61,7 @@ void incache_sort(RecordArr_t const &records, RecordArr_t &out, Index_t &index,
 } // incache_sort (out-of-place)
 
 void inmem_merge(RecordArr_t const &records, OutBuffer out, Device *hd,
-                 Index_r &index, RunInfo run_info) {
+                 Index_r &index, RunInfo run_info, Record_t *outputWitnessRecord) {
   RowCount const run_size = run_info.run_size;
   RowCount const n_runs = run_info.n_runs;
   for (uint32_t i = 0; i < n_runs; ++i) {
@@ -81,10 +81,16 @@ void inmem_merge(RecordArr_t const &records, OutBuffer out, Device *hd,
   std::make_heap(begin, end, cmp);
 
   std::size_t out_ind = 0;
+  bool first = true;
   while (begin != end) {
     out.out[out_ind++] = records[begin->run_id * run_size + begin->record_id];
     std::pop_heap(begin, end, cmp);
-
+    if(out_ind == 1 && first) {
+        Record_t::copy_rec(out.out[out_ind - 1], outputWitnessRecord);
+        first = false;
+    } else {
+        (*outputWitnessRecord).x_or(out.out[out_ind - 1]);
+    }
     if (++((end - 1)->record_id) >= run_size) {
       --end;
     } // if
@@ -105,7 +111,7 @@ void inmem_merge(RecordArr_t const &records, OutBuffer out, Device *hd,
 } // inmem_merge
 
 void external_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
-                    Index_r &index, ExRunInfo run_info) {
+                    Index_r &index, ExRunInfo run_info, Record_t *outputWitnessRecord) {
   RowCount const run_size = run_info.run_size;
   RowCount const n_runs = run_info.n_runs;
 
@@ -133,10 +139,17 @@ void external_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
   std::make_heap(begin, end, cmp);
 
   std::size_t out_ind = 0;
+  bool first = true;
   while (begin != end) {
     out.out[out_ind++] =
         records[begin->run_id * run_size + begin->record_id % run_size];
     std::pop_heap(begin, end, cmp);
+    if(out_ind == 1 && first) {
+        Record_t::copy_rec(out.out[out_ind - 1], outputWitnessRecord);
+        first = false;
+    } else {
+      (*outputWitnessRecord).x_or(out.out[out_ind - 1]);
+    }
 
     if ((++((end - 1)->record_id)) % run_size == 0) {
       auto cur_iter = end - 1;

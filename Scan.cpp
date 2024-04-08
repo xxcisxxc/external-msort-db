@@ -45,9 +45,14 @@ bool ScanIterator::next() {
 
   RecordArr_t records = _plan->_rcache;
   random_generate(records[_count % _kRowCache]);
-
+  // witness for input
+  if(_count == 0) {
+    Record_t::copy_rec(_plan->_rcache[_count], _plan->inputWitnessRecord);
+  } else {
+   (*(_plan->inputWitnessRecord)).x_or(records[_count % _kRowCache]);
+  }
   traceprintf("produced %lu - %d %d\n", (unsigned long)(_count),
-              _plan->_rcache[_count].key[0], _plan->_rcache[_count].key[1]);
+              _plan->_rcache[_count % _kRowCache].key[0], _plan->_rcache[_count % _kRowCache].key[1]);
 
   ++_count;
   return true;

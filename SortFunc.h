@@ -30,7 +30,7 @@ void incache_sort(RecordArr_t const &records, RecordArr_t &out, Index_t &index,
                   RowCount const n_records);
 
 void inmem_merge(RecordArr_t const &records, OutBuffer out, Device *hd,
-                 Index_r &index, RunInfo run_info);
+                 Index_r &index, RunInfo run_info, Record_t *outputWitnessRecord);
 
 void external_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
-                    Index_r &index, ExRunInfo run_info);
+                    Index_r &index, ExRunInfo run_info, Record_t *outputWitnessRecord);

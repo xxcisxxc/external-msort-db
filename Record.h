@@ -89,6 +89,12 @@ template <class Key = char> struct Record {
       key[i] = rhs.key[i];
     return *this;
   }
+
+  static void copy_rec(const Record& source, Record *destination) {
+    for (std::size_t i = 0; i < bytes / sizeof(Key); ++i) {
+      destination->key[i] = source.key[i];
+    }
+  }
 };
 
 /**
