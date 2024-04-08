@@ -83,8 +83,8 @@ public:
    * @param bandwidth MB/s
    * @param capacity MB
    */
-  Device(std::string name, double const latency,
-         double const bandwidth, double const capacity)
+  Device(std::string name, double const latency, double const bandwidth,
+         double const capacity)
       : _latency(latency), _bandwidth(bandwidth * 1e-3 * 1024 * 1024),
         _capacity(capacity * 1024 * 1024), _used(0) {
     // Asynchronous I/O should relies on C++ async & future
@@ -166,6 +166,8 @@ public:
   ::ssize_t eappend(char const *buffer, std::size_t const bytes) {
     return ewrite(buffer, bytes, _used);
   }
+
+  inline void clear() { _used = 0; }
 
   /**
    * @brief Destroy the Device object
