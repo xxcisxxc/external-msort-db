@@ -12,7 +12,6 @@ SortPlan::SortPlan(Plan *const input)
                         kMemSize / Record_t::bytes)),
       ssd(std::make_unique<Device>("ssd", 0.1, 200, 10 * 1024)),
       hdd(std::make_unique<Device>("hdd", 5, 100, ULONG_MAX)) {
-        input->witnessRecord();
   TRACE(true);
 } // SortPlan::SortPlan
 
@@ -89,8 +88,6 @@ bool SortIterator::next() {
     // load 4 records from each 8 runs in sdd
     external_merge(in, {2 * 8, out}, {ssd, hdd}, indexr, {{4, 8}, 32},  _plan->outputWitnessRecord);
     ssd->clear();
-    // traceprintf(" witness output xor - %d %d\n", _plan->_input->witnessRecord()->key[0], _plan->_input->witnessRecord()->key[1]);
-    // traceprintf(" witness output xor 2 - %d %d\n", _plan->witnessRecord()->key[0], _plan->witnessRecord()->key[1]);
     //TODO:: move this to final merge place
     if(*(_plan->_input->witnessRecord()) == *(_plan->witnessRecord()))
       traceprintf("yess\n");
@@ -99,5 +96,4 @@ bool SortIterator::next() {
   } // if ssd is full, load from ssd merge to hdd
   
   return true;
-  //return (_plan->_input->witnessRecord() == _plan->witnessRecord());
 } // SortIterator::next
