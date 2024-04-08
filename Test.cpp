@@ -5,7 +5,7 @@
 #include "Sort.h"
 #include "defs.h"
 
-constexpr std::size_t kCount = 24;
+constexpr std::size_t kCount = 256;
 constexpr std::size_t kSize = 20;
 
 int main(/*int argc, char *argv[]*/) {
@@ -21,7 +21,12 @@ int main(/*int argc, char *argv[]*/) {
   it->run();
   delete it;
 
-  const RecordArr_t &records = plan->records();
+  // const RecordArr_t &records = plan->records();
+  RecordArr_t records(kCount);
+  std::fstream file;
+  file.open("hdd", std::ios::in | std::ios::binary);
+  file.read(reinterpret_cast<char *>(records.data()), kCount * kSize);
+  file.close();
   for (uint32_t i = 0; i < kCount; ++i)
     traceprintf("record %d: %d %d\n", i, records[i].key[0], records[i].key[1]);
 

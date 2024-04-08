@@ -59,7 +59,7 @@ private:
   double const _latency;       // in milliseconds
   double const _bandwidth;     // in bytes per millisecond
   std::size_t const _capacity; // capacity in bytes
-  std::size_t _used;           // remaining capacity in bytes
+  std::size_t _used;           // used capacity in bytes
 
   std::fstream _file;
   Timer _timer; // for timing
@@ -83,8 +83,8 @@ public:
    * @param bandwidth MB/s
    * @param capacity MB
    */
-  Device(std::string name, std::size_t const latency,
-         std::size_t const bandwidth, std::size_t const capacity)
+  Device(std::string name, double const latency,
+         double const bandwidth, double const capacity)
       : _latency(latency), _bandwidth(bandwidth * 1e-3 * 1024 * 1024),
         _capacity(capacity * 1024 * 1024), _used(0) {
     // Asynchronous I/O should relies on C++ async & future
@@ -161,6 +161,10 @@ public:
     }
 
     return count;
+  }
+
+  ::ssize_t eappend(char const *buffer, std::size_t const bytes) {
+    return ewrite(buffer, bytes, _used);
   }
 
   /**
