@@ -87,6 +87,7 @@ bool SortIterator::next() {
 
     // load 4 records from each 8 runs in sdd
     external_merge(in, {2 * 8, out}, {ssd, hdd}, indexr, {{4, 8}, 32});
+    ssd->clear();
   } // if ssd is full, load from ssd merge to hdd
 
   return true;
