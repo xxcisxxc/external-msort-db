@@ -10,7 +10,10 @@ public:
   Iterator *init() const override;
   inline RecordArr_t const &records() const override { return _rcache; }
   Record_t *inputWitnessRecord = new Record_t();
-  virtual Record_t *witnessRecord() const override { return inputWitnessRecord; }
+  virtual Record_t *witnessRecord() const override {
+    return inputWitnessRecord;
+  }
+
 private:
   RowCount const _count;
   // Cache-resident records

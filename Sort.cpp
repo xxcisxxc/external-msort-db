@@ -74,7 +74,8 @@ bool SortIterator::next() {
     RecordArr_t in = _plan->_rmem.work;
     RecordArr_t out = _plan->_rmem.out;
     Device *ssd = _plan->ssd.get();
-    inmem_merge(in, {2 * 8, out}, ssd, indexr, {8, 4}, _plan->outputWitnessRecord);
+    inmem_merge(in, {2 * 8, out}, ssd, indexr, {8, 4},
+                _plan->outputWitnessRecord);
     mem_offset = 0;
   }
 
@@ -86,14 +87,15 @@ bool SortIterator::next() {
     Device *hdd = _plan->hdd.get();
 
     // load 4 records from each 8 runs in sdd
-    external_merge(in, {2 * 8, out}, {ssd, hdd}, indexr, {{4, 8}, 32},  _plan->outputWitnessRecord);
+    external_merge(in, {2 * 8, out}, {ssd, hdd}, indexr, {{4, 8}, 32},
+                   _plan->outputWitnessRecord);
     ssd->clear();
-    //TODO:: move this to final merge place
-    if(*(_plan->_input->witnessRecord()) == *(_plan->witnessRecord()))
+    // TODO:: move this to final merge place
+    if (*(_plan->_input->witnessRecord()) == *(_plan->witnessRecord()))
       traceprintf("yess\n");
-    else 
-     traceprintf("NOOO\n");
+    else
+      traceprintf("NOOO\n");
   } // if ssd is full, load from ssd merge to hdd
-  
+
   return true;
 } // SortIterator::next
