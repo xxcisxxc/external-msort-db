@@ -97,7 +97,7 @@ void inmem_merge(RecordArr_t const &records, OutBuffer out, Device *hd,
   while (!ltree.empty())
   {
     MergeInd popped = ltree.pop();
-    if(popped.run_id >=run_size) {
+    if(popped.run_id >=n_runs) {
       ltree.deleteRecordId(popped.run_id);
       continue;
     }
