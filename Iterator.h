@@ -12,6 +12,7 @@ public:
   virtual ~Plan();
   virtual class Iterator *init() const = 0;
   virtual RecordArr_t const &records() const = 0;
+  virtual Record_t const &witnessRecord() const = 0;
 
 private:
 }; // class Plan

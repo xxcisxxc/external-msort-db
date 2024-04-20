@@ -10,8 +10,9 @@ SortPlan::SortPlan(Plan *const input)
       _rmem(RecordArr_t(std::shared_ptr<Record_t>(
                             reinterpret_cast<Record_t *>(new char[kMemSize])),
                         kMemSize / Record_t::bytes)),
-      ssd(std::make_unique<Device>("ssd", 0.1, 200, 10 * 1024)),
-      hdd(std::make_unique<Device>("hdd", 5, 100, ULONG_MAX)) {
+      ssd(std::make_unique<Device>(kSSD, 0.1, 200, 10 * 1024)),
+      hdd(std::make_unique<Device>(kHDD, 5, 100, ULONG_MAX)),
+      _inputWitnessRecord(_input->witnessRecord()) {
   TRACE(true);
 } // SortPlan::SortPlan
 

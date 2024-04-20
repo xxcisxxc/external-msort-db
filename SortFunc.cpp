@@ -84,7 +84,6 @@ void inmem_merge(RecordArr_t const &records, OutBuffer out, Device *hd,
   while (begin != end) {
     out.out[out_ind++] = records[begin->run_id * run_size + begin->record_id];
     std::pop_heap(begin, end, cmp);
-
     if (++((end - 1)->record_id) >= run_size) {
       --end;
     } // if

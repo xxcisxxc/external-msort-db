@@ -9,11 +9,15 @@ public:
   ~ScanPlan();
   Iterator *init() const override;
   inline RecordArr_t const &records() const override { return _rcache; }
+  Record_t const &witnessRecord() const override {
+    return *(_inputWitnessRecord.get());
+  }
 
 private:
   RowCount const _count;
   // Cache-resident records
   RecordArr_t const _rcache;
+  std::unique_ptr<Record_t> const _inputWitnessRecord;
 }; // class ScanPlan
 
 class ScanIterator : public Iterator {
