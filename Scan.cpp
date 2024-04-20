@@ -9,8 +9,10 @@ ScanPlan::ScanPlan(RowCount const count)
     : _count(count),
       _rcache(std::shared_ptr<Record_t>(
                   reinterpret_cast<Record_t *>(new char[kCacheSize])),
-              kCacheSize / Record_t::bytes) {
+              kCacheSize / Record_t::bytes),
+      _inputWitnessRecord(new Record_t) {
   TRACE(true);
+  _inputWitnessRecord->fill(0);
 } // ScanPlan::ScanPlan
 
 ScanPlan::~ScanPlan() { TRACE(true); } // ScanPlan::~ScanPlan
@@ -45,12 +47,10 @@ bool ScanIterator::next() {
 
   RecordArr_t records = _plan->_rcache;
   random_generate(records[_count % _kRowCache]);
+
   // witness for input
-  if (_count == 0) {
-    Record_t::copy_rec(_plan->_rcache[_count], _plan->inputWitnessRecord);
-  } else {
-    (*(_plan->inputWitnessRecord)).x_or(records[_count % _kRowCache]);
-  }
+  (*(_plan->_inputWitnessRecord.get())).x_or(records[_count % _kRowCache]);
+
   traceprintf("produced %lu - %d %d\n", (unsigned long)(_count),
               _plan->_rcache[_count % _kRowCache].key[0],
               _plan->_rcache[_count % _kRowCache].key[1]);
