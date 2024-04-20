@@ -187,4 +187,8 @@ public:
     return std::async(std::launch::async, &Device::ewrite, this, buffer, bytes,
                       offset);
   }
+
+  std::size_t getConsumption() {
+    return _used;
+  }
 };

@@ -63,7 +63,7 @@ void incache_sort(RecordArr_t const &records, RecordArr_t &out, Index_t &index,
 } // incache_sort (out-of-place)
 
 void inmem_merge(RecordArr_t const &records, OutBuffer out, Device *hd,
-                 Index_r &index, RunInfo run_info, Record_t *outputWitnessRecord) {
+                 Index_r &index, RunInfo run_info, Record_t *outputWitnessRecord, RowCount lastRunLimit) {
   RowCount const run_size = run_info.run_size;
   RowCount const n_runs = run_info.n_runs;
 
@@ -101,8 +101,8 @@ void inmem_merge(RecordArr_t const &records, OutBuffer out, Device *hd,
       ltree.deleteRecordId(popped.run_id);
       continue;
     }
-    uint32_t index = popped.run_id * run_size + popped.record_id;
-    std::cout<<"index is - " <<index<<std::endl;
+    //uint32_t index = popped.run_id * run_size + popped.record_id;
+    // std::cout<<"index is - " <<index<<std::endl;
     out.out[out_ind++] = records[popped.run_id * run_size + popped.record_id];
     // for maintaining the witness record
     if(out_ind == 1 && first) {
@@ -111,8 +111,11 @@ void inmem_merge(RecordArr_t const &records, OutBuffer out, Device *hd,
     } else {
         (*outputWitnessRecord).x_or(out.out[out_ind - 1]);
     }
-    if(++popped.record_id < run_size){
-      ltree.insert(popped.run_id, popped.record_id);
+
+    if( (popped.run_id != n_runs - 1 && (popped.record_id + 1) < run_size)
+        || (popped.run_id == n_runs - 1 && lastRunLimit == 0 && popped.record_id + 1 < run_size) 
+        || (popped.run_id == n_runs - 1 && lastRunLimit != 0 && popped.record_id + 1 < lastRunLimit)) {
+      ltree.insert(popped.run_id, ++popped.record_id);
     } else {
       ltree.deleteRecordId(popped.run_id);
     }
@@ -134,7 +137,7 @@ void inmem_merge(RecordArr_t const &records, OutBuffer out, Device *hd,
 } // inmem_merge
 
 void external_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
-                    Index_r &index, ExRunInfo run_info, Record_t *outputWitnessRecord) {
+                    Index_r &index, ExRunInfo run_info, Record_t *outputWitnessRecord, RowCount lastRunLimit) {
   RowCount const run_size = run_info.run_size;
   RowCount const n_runs = run_info.n_runs;
 
@@ -186,22 +189,28 @@ void external_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
       (*outputWitnessRecord).x_or(out.out[out_ind - 1]);
     }
 
-    if (++popped.record_id % run_size == 0) {
-      //auto cur_iter = end - 1;
-      if (popped.record_id >= run_info.exrun_size) {
-        ltree.deleteRecordId(popped.run_id);
-        //--end;
-      } else {
-        dev.hd_in->eread(
+     if (++popped.record_id % run_size == 0) {
+        RowCount maxToBeRead = run_size;
+        if(popped.run_id == n_runs - 1 && lastRunLimit !=0 && popped.record_id + run_size > lastRunLimit) {
+          maxToBeRead = lastRunLimit - popped.record_id; 
+        } else if (popped.record_id + run_size > run_info.exrun_size) {
+          maxToBeRead = run_info.exrun_size - popped.record_id; 
+        }
+          dev.hd_in->eread(
             reinterpret_cast<char *>(
                 (records + run_size * popped.run_id).data()),
-            run_size * Record_t::bytes,
+            maxToBeRead * Record_t::bytes,
             (run_info.exrun_size * popped.run_id + popped.record_id) *
                 Record_t::bytes);
+        //}
       }
-    } // if
-    if (popped.record_id < run_info.exrun_size) {
+     // if
+    if ((popped.run_id != n_runs-1 && popped.record_id < run_info.exrun_size) 
+      || (popped.run_id == n_runs -1 && lastRunLimit == 0 && popped.record_id < run_info.exrun_size) 
+      || (popped.run_id == n_runs - 1 && lastRunLimit !=0 && popped.record_id < lastRunLimit)) {
         ltree.insert(popped.run_id, popped.record_id);
+    } else {
+      ltree.deleteRecordId(popped.run_id);
     }
     if (out_ind == out.out_size) {
       // TODO: check return value

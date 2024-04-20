@@ -49,6 +49,7 @@ private:
 
   std::unique_ptr<Device> ssd;
   std::unique_ptr<Device> hdd;
+  std::unique_ptr<Device> hddout;
 }; // class SortPlan
 
 class SortIterator : public Iterator {
