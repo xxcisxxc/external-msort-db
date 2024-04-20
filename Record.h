@@ -75,19 +75,23 @@ template <class Key = char> struct Record {
   static inline void *operator new(std::size_t const size) {
     if (size != sizeof(Record))
       throw std::bad_alloc();
-    return malloc(bytes);
+    return new char[bytes];
   }
 
   static inline void *operator new[](std::size_t const size) {
     if (size % sizeof(Record) != 0)
       throw std::bad_alloc();
     size_t const num_recs = size / sizeof(Record);
-    return malloc(num_recs * bytes);
+    return new char[num_recs * bytes];
   }
 
-  static inline void operator delete(void *const ptr) { free(ptr); }
+  static inline void operator delete(void *const ptr) {
+    delete reinterpret_cast<char *>(ptr);
+  }
 
-  static inline void operator delete[](void *const ptr) { free(ptr); }
+  static inline void operator delete[](void *const ptr) {
+    delete reinterpret_cast<char *>(ptr);
+  }
 
   inline friend void swap(Record &lhs, Record &rhs) {
     for (std::size_t i = 0; i < bytes / sizeof(Key); ++i)
