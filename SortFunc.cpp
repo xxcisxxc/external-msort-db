@@ -83,7 +83,7 @@ void inmem_merge(RecordArr_t const &records, OutBuffer out, Device *hd,
     } else if (b.run_id >= n_runs) {
       return true;
     }
-    return records[a.run_id * run_size + a.record_id] >
+    return records[a.run_id * run_size + a.record_id] <
            records[b.run_id * run_size + b.record_id];
   };
 
@@ -152,7 +152,7 @@ void external_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
     } else if (b.run_id >= n_runs) {
       return true;
     }
-    return records[a.run_id * run_size + a.record_id % run_size] >
+    return records[a.run_id * run_size + a.record_id % run_size] <
            records[b.run_id * run_size + b.record_id % run_size];
   };
 
