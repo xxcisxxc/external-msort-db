@@ -1,6 +1,7 @@
 #pragma once
 
 #include <chrono>
+#include <climits>
 #include <cstddef>
 #include <cstdio>
 #include <cstdlib>
@@ -84,9 +85,10 @@ public:
    * @param capacity MB
    */
   Device(std::string name, double const latency, double const bandwidth,
-         double const capacity)
+         std::size_t const capacity)
       : _latency(latency), _bandwidth(bandwidth * 1e-3 * 1024 * 1024),
-        _capacity(capacity * 1024 * 1024), _used(0) {
+        _capacity(capacity == ULONG_MAX ? ULONG_MAX : capacity * 1024 * 1024),
+        _used(0) {
     // Asynchronous I/O should relies on C++ async & future
     _file.open(name, std::ios::in | std::ios::out | std::ios::binary |
                          std::ios::trunc);
@@ -136,6 +138,7 @@ public:
   ::ssize_t ewrite(char const *buffer, std::size_t const bytes,
                    std::size_t const offset) {
     if (_used + bytes + offset > _capacity) {
+      printf("capacity exceeded\n");
       return -1;
     }
 
@@ -187,6 +190,8 @@ public:
     return std::async(std::launch::async, &Device::ewrite, this, buffer, bytes,
                       offset);
   }
+
+  std::size_t getConsumption() { return _used; }
 };
 
 class ReadDevice {

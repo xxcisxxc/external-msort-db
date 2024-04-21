@@ -1,7 +1,7 @@
 .PHONY : all trace count clean test
 
 CPP=g++
-CPPOPT=-g -Og # -D_DEBUG
+CPPOPT=-g -O0 # -D_DEBUG
 CPPFLAGS=$(CPPOPT) -Wall -Wextra -std=c++17
 
 # documents and scripts
@@ -18,12 +18,12 @@ HDRS=	defs.h \
 		Utils.h Validate.h
 SRCS=	defs.cpp Assert.cpp \
 		Iterator.cpp Scan.cpp Filter.cpp Sort.cpp \
-		SortFunc.cpp Validate.cpp
+		SortFunc.cpp Validate.cpp LoserTree.cpp
 
 # compilation targets
 OBJS=	defs.o Assert.o \
 		Iterator.o Scan.o Filter.o Sort.o \
-		SortFunc.o Validate.o
+		SortFunc.o Validate.o LoserTree.o
 
 Test.exe : Makefile $(OBJS) Test.cpp $(HDRS)
 	$(CPP) $(CPPFLAGS) -o Test.exe Test.cpp $(OBJS)

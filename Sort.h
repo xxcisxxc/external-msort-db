@@ -50,6 +50,7 @@ private:
 
   std::unique_ptr<Device> ssd;
   std::unique_ptr<Device> hdd;
+  std::unique_ptr<Device> hddout;
 
   Record_t const &_inputWitnessRecord;
 }; // class SortPlan

@@ -1,55 +1,88 @@
+#include "Record.h"
 #include "defs.h"
-#include <iostream>
 
-typedef unsigned int Index;
-typedef unsigned int Key;
+typedef unsigned int RunId;
+typedef unsigned int RecordId;
 typedef int Level;
 
-class LoserTree {
+template <typename Compare> class LoserTree {
   Level const height;
-  struct Node {
-    Index index;
-    Key key;
-    Node(){};
-    Node(Index index, Key key) : index(index), key(key) {}
-    // void swap(Node &candidate) {
-    //     Node temp = this;
-    //     this = candidate;
-    //     candidate = temp;
-    // }
-
-    bool less(const Node &candidate) {
-      if (key < candidate.key) {
-        return true;
-      }
-      return false;
-    }
-  } *const heap;
+  Index_r heap;
+  const Compare cmp;
 
 public:
-  LoserTree(Level const h) : height(h), heap(new Node[1 << h]) { TRACE(true); }
-  ~LoserTree() { delete[] heap; }
+  LoserTree(Level const h, const Compare &cmp, Index_r &index)
+      : height(h), heap(index), cmp(cmp) {
+    TRACE(true);
+    uint32_t cap = capacity();
+    for (uint32_t i = 0; i < cap; i++) {
+      // MergeInd temp = {cap + 1, early_fence(i)};
+      heap[i].record_id = early_fence(i);
+      heap[i].run_id = cap + 1;
+    }
+  }
+  ~LoserTree() {
+    // delete heap;
+  }
 
-  Index capacity() { return Index(1 << height); }
-  Index root() { return Index(0); }
-  void leaf(Index index, Index &slot) { slot = capacity() + index; }
-  void parent(Index &slot) { slot /= 2; }
-  void leaf(Index index, Index &slot, Level &level) {
+  bool less(MergeInd &a, MergeInd &b) {
+    bool achanged = false;
+    bool bchanged = false;
+    if (a.record_id == late_fence(a.run_id) ||
+        a.record_id == early_fence(a.run_id)) {
+      return false;
+    } else {
+      achanged = true;
+    }
+
+    if (b.record_id == late_fence(b.run_id) ||
+        b.record_id == early_fence(b.run_id)) {
+      return true;
+    } else {
+      bchanged = true;
+    }
+
+    if (achanged) {
+      a.record_id = a.record_id - capacity();
+    }
+    if (bchanged) {
+      b.record_id = b.record_id - capacity();
+    }
+
+    bool compare = cmp(a, b);
+    if (achanged) {
+      a.record_id = a.record_id + capacity();
+    }
+    if (bchanged) {
+      b.record_id = b.record_id + capacity();
+    }
+    return compare;
+  }
+
+  RunId capacity() { return RunId(1 << height); }
+  RunId root() { return RunId(0); }
+  void leaf(RunId index, RunId &slot) { slot = capacity() + index; }
+  void parent(RunId &slot) { slot /= 2; }
+  void leaf(RunId index, RunId &slot, Level &level) {
     level = 0;
     leaf(index, slot);
   }
-  void parent(Index &slot, Level &level) {
+  void parent(RunId &slot, Level &level) {
     ++level;
     parent(slot);
   }
-  Key early_fence(Index index) { return Key(index); }
-  Key late_fence(Index index) { return ~Key(index); }
-  void pass(Index index, Key key) {
-    Node candidate(index, key);
-    Index slot;
+  RecordId early_fence(RunId index) { return RecordId(index); }
+  RecordId late_fence(RunId index) { return ~RecordId(index); }
+  void pass(RunId index, RecordId key) {
+    MergeInd candidate = {index, key};
+    RunId slot;
     for (slot = capacity() + index; (slot /= 2) != 0;) {
-      if (heap[slot].less(candidate)) {
-        Node temp = heap[slot];
+      if (heap[slot].run_id > capacity()) {
+        heap[slot] = candidate;
+        return;
+      }
+      if (less(heap[slot], candidate)) {
+        MergeInd temp = heap[slot];
         heap[slot] = candidate;
         candidate = temp;
       }
@@ -58,42 +91,49 @@ public:
   }
 
   bool empty() {
-    Node &hr = heap[root()];
-    while (hr.key == early_fence(hr.index))
-      pass(hr.index, late_fence(hr.index));
-    return hr.key == late_fence(hr.index);
+    MergeInd &hr = heap[root()];
+    while (hr.record_id == early_fence(hr.run_id))
+      pass(hr.run_id, late_fence(hr.run_id));
+    return hr.record_id == late_fence(hr.run_id);
   }
 
-  Index poptop(bool invalidate) {
-    if (empty())
-      return -1;
+  MergeInd poptop(bool invalidate) {
+    // if(empty())
+    //     return nullptr;
     if (invalidate) {
-      std::cout << "popped key - " << heap[root()].key << std::endl;
-      heap[root()].key = early_fence(heap[root()].index);
+      MergeInd x = heap[root()];
+      MergeInd popped = {x.run_id, x.record_id};
+      popped.record_id = popped.record_id - early_fence(capacity());
+      // std::cout << "popped key - " << heap[root()].record_id
+      //           << "run id = " << popped.run_id << std::endl;
+      heap[root()].record_id = early_fence(heap[root()].run_id);
+      return popped;
     }
-
-    return heap[root()].index;
+    return {0, 0};
   }
-  Index top() { return poptop(false); }
+  MergeInd top() { return poptop(false); }
 
-  Index pop() { return poptop(true); }
-  void push(Index index, Key key) {
+  MergeInd pop() { return poptop(true); }
+  void push(RunId index, RecordId key) {
     pass(index, early_fence(capacity()) + key);
   }
-  void insert(Index index, Key key) { push(index, key); }
-  void update(Index index, Key key) { push(index, key); }
-  void deleteKey(Index index) { pass(index, late_fence(index)); }
+  void insert(RunId index, RecordId key) { push(index, key); }
+  void update(RunId index, RecordId key) { push(index, key); }
+  void deleteRecordId(RunId index) { pass(index, late_fence(index)); }
 };
 
-int main() {
-  std::cout << "Ranjitha" << std::endl;
-  Level level(2);
-  LoserTree ltre(level);
-  for (int i = 0; i < 4; i++) {
-    ltre.insert(i, 4 - i);
-  }
+// int main() {
+//     std::cout<<"Ranjitha"<<std::endl;
+//     Level level(2);
+//     auto cmp = [](MergeInd const &a, MergeInd const &b) {
+//     return a.record_id > b.record_id;
+//   };
+//     LoserTree ltre(level, cmp);
+//     for(int i=0; i<4; i++) {
+//         ltre.insert(i, 4-i);
+//     }
 
-  while (!ltre.empty()) {
-    std::cout << ltre.pop() << std::endl;
-  }
-}
+//     while(!ltre.empty()){
+//         std::cout<<ltre.pop()<<std::endl;
+//     }
+// }
