@@ -26,6 +26,10 @@ template <class Key = char> struct Record {
   Key key[1];
 
   inline bool operator<(Record const &rhs) const {
+    if (typeid(Key) == typeid(unsigned char)) {
+      return std::memcmp(key, rhs.key, bytes) < 0;
+    }
+
     for (std::size_t i = 0; i < bytes / sizeof(Key); ++i) {
       if (key[i] < rhs.key[i])
         return true;
@@ -35,6 +39,10 @@ template <class Key = char> struct Record {
     return false;
   }
   inline bool operator>(Record const &rhs) const {
+    if (typeid(Key) == typeid(unsigned char)) {
+      return std::memcmp(key, rhs.key, bytes) > 0;
+    }
+
     for (std::size_t i = 0; i < bytes / sizeof(Key); ++i) {
       if (key[i] > rhs.key[i])
         return true;
@@ -44,6 +52,10 @@ template <class Key = char> struct Record {
     return false;
   }
   inline bool operator==(Record const &rhs) const {
+    if (typeid(Key) == typeid(unsigned char)) {
+      return std::memcmp(key, rhs.key, bytes) == 0;
+    }
+
     for (std::size_t i = 0; i < bytes / sizeof(Key); ++i) {
       if (key[i] != rhs.key[i])
         return false;
@@ -55,8 +67,6 @@ template <class Key = char> struct Record {
   inline bool operator>=(Record const &rhs) const { return !(*this < rhs); }
 
   inline Record &x_or(Record const &rhs) {
-    if (bytes != rhs.bytes)
-      throw std::invalid_argument("Record sizes do not match");
     for (std::size_t i = 0; i < bytes / sizeof(Key); ++i)
       key[i] ^= rhs.key[i];
     return *this;
@@ -65,36 +75,59 @@ template <class Key = char> struct Record {
   static inline void *operator new(std::size_t const size) {
     if (size != sizeof(Record))
       throw std::bad_alloc();
-    return malloc(bytes);
+    return new char[bytes];
   }
 
   static inline void *operator new[](std::size_t const size) {
     if (size % sizeof(Record) != 0)
       throw std::bad_alloc();
     size_t const num_recs = size / sizeof(Record);
-    return malloc(num_recs * bytes);
+    return new char[num_recs * bytes];
   }
 
-  static inline void operator delete(void *const ptr) { free(ptr); }
+  static inline void operator delete(void *const ptr) {
+    delete reinterpret_cast<char *>(ptr);
+  }
 
-  static inline void operator delete[](void *const ptr) { free(ptr); }
+  static inline void operator delete[](void *const ptr) {
+    delete reinterpret_cast<char *>(ptr);
+  }
 
   inline friend void swap(Record &lhs, Record &rhs) {
     for (std::size_t i = 0; i < bytes / sizeof(Key); ++i)
       std::swap(lhs.key[i], rhs.key[i]);
   }
   void swap(Record &rhs) { swap(*this, rhs); }
+
   inline Record &operator=(Record const &rhs) {
-    for (std::size_t i = 0; i < bytes / sizeof(Key); ++i)
-      key[i] = rhs.key[i];
+    std::memmove(key, rhs.key, bytes);
     return *this;
   }
 
-  static void copy_rec(const Record& source, Record *destination) {
-    for (std::size_t i = 0; i < bytes / sizeof(Key); ++i) {
-      destination->key[i] = source.key[i];
+  void fill(Key const &val = 0) {
+    if (sizeof(Key) == sizeof(char) || val == 0) {
+      std::memset(key, val, bytes);
+      return;
     }
+
+    for (std::size_t i = 0; i < bytes / sizeof(Key); ++i)
+      key[i] = val;
   }
+
+  bool isfilled(Key const &val = 0) {
+    for (std::size_t i = 0; i < bytes / sizeof(Key); ++i)
+      if (key[i] != val)
+        return false;
+    return true;
+  }
+
+  operator Key *() { return key; }
+
+  // static void copy_rec(const Record &source, Record *destination) {
+  //   for (std::size_t i = 0; i < bytes / sizeof(Key); ++i) {
+  //     destination->key[i] = source.key[i];
+  //   }
+  // }
 };
 
 /**
@@ -210,7 +243,7 @@ public:
     return Iterator(reinterpret_cast<Record<Key> *>(
         reinterpret_cast<char *>(arr.get()) + sz * Record<Key>::bytes));
   }
-  Record<Key> *data() { return arr.get(); }
+  Record<Key> *data() const { return arr.get(); }
   shared_arr ptr() const { return arr; }
   shared_arr ptr(std::size_t offset_byte) const {
     char *offset_ptr = reinterpret_cast<char *>(arr.get()) + offset_byte;
@@ -342,4 +375,5 @@ struct MergeInd {
   uint32_t run_id;
   uint32_t record_id;
 };
+
 using Index_r = Index<MergeInd>;

@@ -192,3 +192,26 @@ public:
     return _used;
   }
 };
+
+class ReadDevice {
+private:
+  std::fstream _file;
+
+public:
+  ReadDevice(std::string name) {
+    _file.open(name, std::ios::in | std::ios::binary);
+    if (!_file.is_open()) {
+      throw std::runtime_error("Failed to open file");
+    }
+  }
+
+  ::ssize_t read_only(char *buffer, std::size_t const bytes) {
+    _file.read(buffer, bytes);
+    if (_file.fail() || _file.bad() || _file.eof()) {
+      return -1;
+    }
+    return _file.gcount();
+  }
+
+  ~ReadDevice() { _file.close(); }
+};

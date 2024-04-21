@@ -1,21 +1,21 @@
 #include "Sort.h"
+#include "Consts.h"
 #include "Device.h"
 #include "Record.h"
 #include "SortFunc.h"
+#include "Utils.h"
 #include "defs.h"
 #include <climits>
-#include "Utils.h"
-#include <iostream>
-#include <cmath>
 
 SortPlan::SortPlan(Plan *const input)
     : _input(input), _rcache(input->records()), _icache(input->records()),
       _rmem(RecordArr_t(std::shared_ptr<Record_t>(
                             reinterpret_cast<Record_t *>(new char[kMemSize])),
                         kMemSize / Record_t::bytes)),
-      ssd(std::make_unique<Device>("ssd", 0.1, 200, 10 * 1024)),
-      hdd(std::make_unique<Device>("hdd", 5, 100, ULONG_MAX)),
-      hddout(std::make_unique<Device>("hddout", 5, 100, ULONG_MAX)) {
+      ssd(std::make_unique<Device>(kSSD, 0.1, 200, 10 * 1024)),
+      hdd(std::make_unique<Device>(kHDD, 5, 100, ULONG_MAX)),
+      hddout(std::make_unique<Device>(kOut, 5, 100, ULONG_MAX)),
+      _inputWitnessRecord(_input->witnessRecord()) {
   TRACE(true);
 } // SortPlan::SortPlan
 
@@ -58,49 +58,53 @@ bool SortIterator::next() {
       break;
     }
     ++_consumed;
-  } while ((_consumed % cache_run_nrecords()) != 0); // run_size: 8 (cache-sized run)
+  } while ((_consumed % cache_run_nrecords()) !=
+           0); // run_size: 8 (cache-sized run)
 
   if (_produced >= _consumed) {
-    //sort all cache runs to inmemory
-    
+    // sort all cache runs to inmemory
+
     Index_r indexr = _plan->_icache.index;
     RecordArr_t in = _plan->_rmem.work;
     RecordArr_t out = _plan->_rmem.out;
     Device *ssd = _plan->ssd.get();
     RowCount inmemRemaining = _consumed % dram_nrecords();
-    RowCount inmemRuns = (inmemRemaining / cache_run_nrecords()) +  ((inmemRemaining % cache_run_nrecords()) == 0 ? 0 : 1);
-    RowCount lastRunLimit = inmemRemaining - ((inmemRemaining / cache_run_nrecords()) * cache_run_nrecords());
-    if(inmemRemaining != 0) {
-      inmem_merge(in, {2 * 8, out}, ssd, indexr, {cache_run_nrecords(), inmemRuns}, _plan->outputWitnessRecord, lastRunLimit);
+    RowCount inmemRuns = (inmemRemaining / cache_run_nrecords()) +
+                         ((inmemRemaining % cache_run_nrecords()) == 0 ? 0 : 1);
+    RowCount lastRunLimit =
+        inmemRemaining -
+        ((inmemRemaining / cache_run_nrecords()) * cache_run_nrecords());
+    if (inmemRemaining != 0) {
+      inmem_merge(in, {2 * 8, out}, ssd, indexr,
+                  {cache_run_nrecords(), inmemRuns}, lastRunLimit);
     }
 
-    //sort all ssd runs to hdd
+    // sort all ssd runs to hdd
     Device *hdd = _plan->hdd.get();
     Device *hddout = _plan->hddout.get();
 
     RowCount ssdRemaining = _consumed % ssd_nrecords();
-    RowCount ssdRuns = (ssdRemaining / dram_nrecords()) + ((ssdRemaining % dram_nrecords()) == 0 ? 0 : 1);
-    RowCount ssdLastRunLimit = ssdRemaining - ((ssdRemaining / dram_nrecords()) * dram_nrecords());
+    RowCount ssdRuns = (ssdRemaining / dram_nrecords()) +
+                       ((ssdRemaining % dram_nrecords()) == 0 ? 0 : 1);
+    RowCount ssdLastRunLimit =
+        ssdRemaining - ((ssdRemaining / dram_nrecords()) * dram_nrecords());
     // load 4 records from each 8 runs in sdd
-    if(ssdRemaining!=0) {
-      external_merge(in, {2 * 8, out}, {ssd, hdd}, indexr, {{4, ssdRuns}, dram_nrecords()},  _plan->outputWitnessRecord, ssdLastRunLimit);
+    if (ssdRemaining != 0) {
+      external_merge(in, {2 * 8, out}, {ssd, hdd}, indexr,
+                     {{4, ssdRuns}, dram_nrecords()}, ssdLastRunLimit);
     }
     ssd->clear();
 
-    //sort all hdd runs to hdd
-    RowCount totalRecords = (hdd->getConsumption())/(Record_t::bytes);
-    RowCount hddRuns = (totalRecords/ssd_nrecords()) + ((totalRecords % ssd_nrecords()) == 0 ? 0 : 1);
-    RowCount hddLastRunLimit = totalRecords - (totalRecords/ssd_nrecords()) * ssd_nrecords();
-    if(hddRuns > 1) {
-      external_merge(in, {2 * 8, out}, {hdd, hddout}, indexr, {{4, hddRuns}, ssd_nrecords()},  _plan->outputWitnessRecord, hddLastRunLimit);
+    // sort all hdd runs to hdd
+    RowCount totalRecords = (hdd->getConsumption()) / (Record_t::bytes);
+    RowCount hddRuns = (totalRecords / ssd_nrecords()) +
+                       ((totalRecords % ssd_nrecords()) == 0 ? 0 : 1);
+    RowCount hddLastRunLimit =
+        totalRecords - (totalRecords / ssd_nrecords()) * ssd_nrecords();
+    if (hddRuns > 1) {
+      external_merge(in, {2 * 8, out}, {hdd, hddout}, indexr,
+                     {{4, hddRuns}, ssd_nrecords()}, hddLastRunLimit);
     }
-
-
-    //TODO:: move this to final merge place
-    if(*(_plan->_input->witnessRecord()) == *(_plan->witnessRecord()))
-      traceprintf("yess\n");
-    else 
-     traceprintf("NOOO\n");
 
     // TODO: merge all the unmerged runs
     // 1. Merge remaining runs in mem to ssd
@@ -114,16 +118,18 @@ bool SortIterator::next() {
   mem_offset += _consumed - _produced;
   _produced = _consumed;
 
-  if (_consumed % dram_nrecords() == 0) { // run_size * n_runs: 8 * 4 (memory-sized run)
+  if (_consumed % dram_nrecords() ==
+      0) { // run_size * n_runs: 8 * 4 (memory-sized run)
     Index_r indexr = _plan->_icache.index;
     RecordArr_t in = _plan->_rmem.work;
     RecordArr_t out = _plan->_rmem.out;
     Device *ssd = _plan->ssd.get();
-    inmem_merge(in, {2 * 8, out}, ssd, indexr, {8, 4}, _plan->outputWitnessRecord, 0);
+    inmem_merge(in, {2 * 8, out}, ssd, indexr, {8, 4}, 0);
     mem_offset = 0;
   }
 
-  if (_consumed % ssd_nrecords() == 0) { // run_size * n_runs: 32 * 8 (ssd-sized run)
+  if (_consumed % ssd_nrecords() ==
+      0) { // run_size * n_runs: 32 * 8 (ssd-sized run)
     Index_r indexr = _plan->_icache.index;
     RecordArr_t in = _plan->_rmem.work;
     RecordArr_t out = _plan->_rmem.out;
@@ -131,14 +137,14 @@ bool SortIterator::next() {
     Device *hdd = _plan->hdd.get();
 
     // load 4 records from each 8 runs in sdd
-    external_merge(in, {256, out}, {ssd, hdd}, indexr, {{4, 8}, 32},  _plan->outputWitnessRecord, 0);
+    external_merge(in, {256, out}, {ssd, hdd}, indexr, {{4, 8}, 32}, 0);
     ssd->clear();
-    //TODO:: move this to final merge place
-    // if(*(_plan->_input->witnessRecord()) == *(_plan->witnessRecord()))
-    //   traceprintf("yess\n");
-    // else 
-    //  traceprintf("NOOO\n");
+    // TODO:: move this to final merge place
+    //  if(*(_plan->_input->witnessRecord()) == *(_plan->witnessRecord()))
+    //    traceprintf("yess\n");
+    //  else
+    //   traceprintf("NOOO\n");
   } // if ssd is full, load from ssd merge to hdd
-  
+
   return true;
 } // SortIterator::next
