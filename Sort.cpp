@@ -137,7 +137,7 @@ bool SortIterator::next() {
     Device *hdd = _plan->hdd.get();
 
     // load 4 records from each 8 runs in sdd
-    external_merge(in, {256, out}, {ssd, hdd}, indexr, {{4, 8}, 32}, 0);
+    external_merge(in, {2 * 8, out}, {ssd, hdd}, indexr, {{4, 8}, 32}, 0);
     ssd->clear();
     // TODO:: move this to final merge place
     //  if(*(_plan->_input->witnessRecord()) == *(_plan->witnessRecord()))

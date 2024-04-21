@@ -109,6 +109,7 @@ public:
       heap[root()].record_id = early_fence(heap[root()].run_id);
       return popped;
     }
+    return {0, 0};
   }
   MergeInd top() { return poptop(false); }
 

@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <cstdio>
 
 void apply_permut(RecordArr_t &records, Index_t &index,
                   RowCount const n_records) {
@@ -67,7 +68,6 @@ void inmem_merge(RecordArr_t const &records, OutBuffer out, Device *hd,
   RowCount const run_size = run_info.run_size;
   RowCount const n_runs = run_info.n_runs;
 
-  auto begin = index.begin();
   auto end = index.begin() + n_runs;
   if (end > index.end()) {
     throw std::out_of_range("inmem_merge: index out of range");
