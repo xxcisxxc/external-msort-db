@@ -138,7 +138,6 @@ public:
   ::ssize_t ewrite(char const *buffer, std::size_t const bytes,
                    std::size_t const offset) {
     if (_used + bytes + offset > _capacity) {
-      printf("capacity exceeded\n");
       return -1;
     }
 

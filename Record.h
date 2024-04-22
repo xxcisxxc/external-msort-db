@@ -86,11 +86,11 @@ template <class Key = char> struct Record {
   }
 
   static inline void operator delete(void *const ptr) {
-    delete reinterpret_cast<char *>(ptr);
+    delete[] reinterpret_cast<char *>(ptr);
   }
 
   static inline void operator delete[](void *const ptr) {
-    delete reinterpret_cast<char *>(ptr);
+    delete[] reinterpret_cast<char *>(ptr);
   }
 
   inline friend void swap(Record &lhs, Record &rhs) {
@@ -121,7 +121,8 @@ template <class Key = char> struct Record {
     return true;
   }
 
-  operator Key *() { return key; }
+  // operator Key *() { return key; }
+  operator char *() { return reinterpret_cast<char *>(key); }
 
   // static void copy_rec(const Record &source, Record *destination) {
   //   for (std::size_t i = 0; i < bytes / sizeof(Key); ++i) {
@@ -374,6 +375,10 @@ using Index_t = Index<>;
 struct MergeInd {
   uint32_t run_id;
   uint32_t record_id;
+  inline bool operator<(MergeInd const &rhs) const {
+    return run_id < rhs.run_id ||
+           (run_id == rhs.run_id && record_id < rhs.record_id);
+  }
 };
 
 using Index_r = Index<MergeInd>;

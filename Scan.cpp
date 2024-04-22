@@ -23,7 +23,7 @@ Iterator *ScanPlan::init() const {
 } // ScanPlan::init
 
 ScanIterator::ScanIterator(ScanPlan const *const plan)
-    : _plan(plan), _count(0), _kRowCache(cache_nrecords()) {
+    : _plan(plan), _count(0), _kRowCache(cache_run_nrecords()) {
   TRACE(true);
 } // ScanIterator::ScanIterator
 
@@ -42,10 +42,12 @@ void random_generate(Record_t &record) {
 bool ScanIterator::next() {
   TRACE(true);
 
-  if (_count >= _plan->_count)
-    return false;
-
   RecordArr_t records = _plan->_rcache;
+
+  if (_count >= _plan->_count) {
+    return false;
+  }
+
   random_generate(records[_count % _kRowCache]);
 
   // witness for input

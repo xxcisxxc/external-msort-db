@@ -5,7 +5,8 @@
 #include <cstddef>
 
 static inline std::size_t cache_nrecords() {
-  return kCacheSize / (Record_t::bytes + sizeof(uint16_t));
+  std::size_t n_records = kCacheSize / (Record_t::bytes + sizeof(uint16_t));
+  return n_records - n_records % 2;
 } // cache_nrecords
 
 template <typename From, typename To>

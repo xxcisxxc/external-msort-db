@@ -21,7 +21,7 @@ Iterator *ValidatePlan::init() const {
 } // ValidatePlan::init
 
 ValidateIterator::ValidateIterator(ValidatePlan const *const plan)
-    : _count(0), _plan(plan), _input(plan->_input->init()), _out(kHDD) {
+    : _count(0), _plan(plan), _input(plan->_input->init()), _out(kOut) {
   TRACE(true);
 } // ValidateIterator::ValidateIterator
 

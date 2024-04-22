@@ -15,15 +15,15 @@ all : test Test.exe
 HDRS=	defs.h \
 		Iterator.h Scan.h Filter.h Sort.h \
 		Record.h Device.h SortFunc.h Consts.h \
-		Utils.h Validate.h
+		Utils.h Validate.h LoserTree.h
 SRCS=	defs.cpp Assert.cpp \
 		Iterator.cpp Scan.cpp Filter.cpp Sort.cpp \
-		SortFunc.cpp Validate.cpp LoserTree.cpp
+		SortFunc.cpp Validate.cpp
 
 # compilation targets
 OBJS=	defs.o Assert.o \
 		Iterator.o Scan.o Filter.o Sort.o \
-		SortFunc.o Validate.o LoserTree.o
+		SortFunc.o Validate.o
 
 Test.exe : Makefile $(OBJS) Test.cpp $(HDRS)
 	$(CPP) $(CPPFLAGS) -o Test.exe Test.cpp $(OBJS)

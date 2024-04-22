@@ -48,9 +48,14 @@ SortIterator::~SortIterator() {
 bool SortIterator::next() {
   TRACE(true);
   static uint64_t mem_offset = 0;
+  static bool finished = false;
+
+  if (finished) {
+    return false;
+  }
 
   RecordArr_t records = _plan->_rcache.records;
-  records += _consumed;
+  // records += _consumed;
   Index_t indext = _plan->_rcache.index;
 
   do {
@@ -61,7 +66,22 @@ bool SortIterator::next() {
   } while ((_consumed % cache_run_nrecords()) !=
            0); // run_size: 8 (cache-sized run)
 
+  Index_r indexr = _plan->_icache.index;
+  RecordArr_t in = _plan->_rmem.work;
+  RecordArr_t out = _plan->_rmem.out;
+  Device *ssd = _plan->ssd.get();
+  Device *hdd = _plan->hdd.get();
+  Device *hddout = _plan->hddout.get();
+
   if (_produced >= _consumed) {
+    if (dram_nrecords() < _consumed && _consumed < 2 * dram_nrecords()) {
+      // traceprintf("spill merge: n_runs_ssd: %lu\n",
+      //             (_consumed - dram_nrecords() + 7) / 8);
+      inmem_spill_merge(in, {2 * 8, out}, {ssd, hddout}, indexr, {8, 4},
+                        (_consumed - dram_nrecords() + 7) / 8);
+    }
+    finished = true;
+    return false;
     // sort all cache runs to inmemory
 
     Index_r indexr = _plan->_icache.index;
@@ -76,7 +96,7 @@ bool SortIterator::next() {
         ((inmemRemaining / cache_run_nrecords()) * cache_run_nrecords());
     if (inmemRemaining != 0) {
       inmem_merge(in, {2 * 8, out}, ssd, indexr,
-                  {cache_run_nrecords(), inmemRuns}, lastRunLimit);
+                  {cache_run_nrecords(), inmemRuns});
     }
 
     // sort all ssd runs to hdd
@@ -113,19 +133,48 @@ bool SortIterator::next() {
     return false;
   }
 
+  if (dram_nrecords() < _consumed && _consumed <= 2 * dram_nrecords()) {
+    // spill one cache run to ssd
+    // mem_size < _consumed < 2 * mem_size
+    ssd->eappend(reinterpret_cast<char *>((in + mem_offset).data()),
+                 cache_run_nrecords() * Record_t::bytes);
+  }
+
   RecordArr_t work = _plan->_rmem.work + mem_offset;
   incache_sort(records, work, indext, _consumed - _produced);
   mem_offset += _consumed - _produced;
+  if (_consumed % cache_run_nrecords() != 0) {
+    for (std::size_t i = _consumed % cache_run_nrecords();
+         i < cache_run_nrecords(); ++i) {
+      work[i].fill(CHAR_MAX);
+    }
+  }
   _produced = _consumed;
 
-  if (_consumed % dram_nrecords() ==
-      0) { // run_size * n_runs: 8 * 4 (memory-sized run)
-    Index_r indexr = _plan->_icache.index;
-    RecordArr_t in = _plan->_rmem.work;
-    RecordArr_t out = _plan->_rmem.out;
-    Device *ssd = _plan->ssd.get();
-    inmem_merge(in, {2 * 8, out}, ssd, indexr, {8, 4}, 0);
+  // run_size * n_runs: 8 * 4 (memory-sized run)
+  if (_consumed % dram_nrecords() == 0) {
     mem_offset = 0;
+
+    if (_consumed >= 2 * dram_nrecords()) {
+      // merge all cache runs in memory to ssd
+      if (_consumed == ssd_nrecords()) {
+        // first run is clear because of spilling
+        ssd->clear();
+      }
+      inmem_merge(in, {2 * 8, out}, ssd, indexr, {8, 4});
+    }
+    if (_consumed == 2 * dram_nrecords()) {
+      // merge all inmemory runs to ssd
+      ssd->eread(reinterpret_cast<char *>(in.data()),
+                 dram_nrecords() * Record_t::bytes, 0);
+      inmem_merge(in, {2 * 8, out}, ssd, indexr, {8, 4});
+    }
+
+    // TODO: spilling: if mem_size < _consumed < 2 * mem_size, spill one cache
+    // run to ssd
+    // TODO: spilling: if _consumed == 2 * mem_size, merge all cache to ssd,
+    // merge unmerged first run
+    // TODO: if goes final merge step before _consumed >= 2 * mem_size
   }
 
   if (_consumed % ssd_nrecords() ==
@@ -134,7 +183,6 @@ bool SortIterator::next() {
     RecordArr_t in = _plan->_rmem.work;
     RecordArr_t out = _plan->_rmem.out;
     Device *ssd = _plan->ssd.get();
-    Device *hdd = _plan->hdd.get();
 
     // load 4 records from each 8 runs in sdd
     external_merge(in, {2 * 8, out}, {ssd, hdd}, indexr, {{4, 8}, 32}, 0);
