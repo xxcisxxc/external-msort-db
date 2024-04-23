@@ -100,13 +100,11 @@ void inmem_merge(RecordArr_t const &records, OutBuffer out, Device *hd,
 
   while (!ltree.empty()) {
     MergeInd popped = ltree.pop();
-    const Record_t &rec = get_record(popped);
-    if (popped.run_id >= n_runs || rec.isfilled()) {
+    if (popped.run_id >= n_runs || get_record(popped).isfilled()) {
       ltree.deleteRecordId(popped.run_id);
       continue;
     }
-    out.out[out_ind++] = rec;
-    // for maintaining the witness record
+    out.out[out_ind++] = get_record(popped);
 
     ++popped.record_id;
 
@@ -115,7 +113,7 @@ void inmem_merge(RecordArr_t const &records, OutBuffer out, Device *hd,
     } else {
       ltree.deleteRecordId(popped.run_id);
     }
-    // delete &popped;
+
     if (out_ind == out.out_size) {
       // TODO: check return value
       hd->eappend(reinterpret_cast<char *>(out.out.data()),
@@ -136,8 +134,7 @@ void inmem_spill_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
                        RowCount const n_runs_ssd) {
   RowCount const mem_run_size = run_info.run_size;
   RowCount const n_runs = run_info.n_runs + n_runs_ssd;
-  RowCount const ssd_run_size =
-      run_info.run_size / 2; // TODO: make cache run size even
+  RowCount const ssd_run_size = run_info.run_size / 2;
 
   // make space for the ssd runs
   for (uint32_t i = 0; i < n_runs_ssd; ++i) {
@@ -184,19 +181,16 @@ void inmem_spill_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
 
   while (!ltree.empty()) {
     MergeInd popped = ltree.pop();
-    const Record_t &rec = get_record(popped);
-    if (popped.run_id >= n_runs || rec.isfilled()) {
+    if (popped.run_id >= n_runs || get_record(popped).isfilled()) {
       ltree.deleteRecordId(popped.run_id);
       continue;
     }
-    out.out[out_ind++] = rec;
+    out.out[out_ind++] = get_record(popped);
 
     ++popped.record_id;
 
     if (popped.run_id < 2 * n_runs_ssd &&
         popped.record_id % ssd_run_size == 0) {
-      // uint64_t offset = ((popped.run_id / 2) * mem_run_size) *
-      // Record_t::bytes;
       uint64_t offset =
           popped.run_id % 2
               ? ((popped.run_id / 2) * mem_run_size) + ssd_run_size
