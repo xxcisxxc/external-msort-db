@@ -116,7 +116,7 @@ template <class Key = char> struct Record {
   }
 
   void fill() {
-    Key fill_val = 1 << (sizeof(Key) * CHAR_BIT - 1);
+    constexpr Key fill_val = 1 << (sizeof(Key) * CHAR_BIT - 1);
     if (std::is_unsigned<Key>()) {
       fill(fill_val | ~fill_val);
     } else {
@@ -132,7 +132,7 @@ template <class Key = char> struct Record {
   }
 
   bool isfilled() const {
-    Key fill_val = 1 << (sizeof(Key) * CHAR_BIT - 1);
+    constexpr Key fill_val = 1 << (sizeof(Key) * CHAR_BIT - 1);
     if (std::is_unsigned<Key>()) {
       return isfilled(fill_val | ~fill_val);
     } else {
