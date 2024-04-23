@@ -6,8 +6,8 @@
 #include "Validate.h"
 #include "defs.h"
 
-constexpr std::size_t kCount = 60;
-constexpr std::size_t kSize = 1;
+constexpr std::size_t kCount = 66;
+constexpr std::size_t kSize = 20;
 
 int main(/*int argc, char *argv[]*/) {
   TRACE(true);

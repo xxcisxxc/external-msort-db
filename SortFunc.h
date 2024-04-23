@@ -37,4 +37,8 @@ void inmem_spill_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
                        RowCount const n_runs_ssd);
 
 void external_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
-                    Index_r &index, ExRunInfo run_info, RowCount lastRunLimit);
+                    Index_r &index, ExRunInfo run_info);
+
+void external_spill_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
+                          Device *dev_exin, Index_r &index, ExRunInfo run_info,
+                          RowCount const n_runs_hdd);

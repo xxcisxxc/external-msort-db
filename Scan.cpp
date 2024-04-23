@@ -23,7 +23,7 @@ Iterator *ScanPlan::init() const {
 } // ScanPlan::init
 
 ScanIterator::ScanIterator(ScanPlan const *const plan)
-    : _plan(plan), _count(0), _kRowCache(cache_run_nrecords()) {
+    : _plan(plan), _count(0), _kRowCache(cache_nrecords()) {
   TRACE(true);
 } // ScanIterator::ScanIterator
 

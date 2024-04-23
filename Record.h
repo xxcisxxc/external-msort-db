@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <climits>
 #include <cstddef>
 #include <cstdio>
 #include <cstdlib>
@@ -104,7 +105,7 @@ template <class Key = char> struct Record {
     return *this;
   }
 
-  void fill(Key const &val = 0) {
+  void fill(Key const &val) {
     if (sizeof(Key) == sizeof(char) || val == 0) {
       std::memset(key, val, bytes);
       return;
@@ -114,11 +115,29 @@ template <class Key = char> struct Record {
       key[i] = val;
   }
 
-  bool isfilled(Key const &val = 0) {
+  void fill() {
+    Key fill_val = 1 << (sizeof(Key) * CHAR_BIT - 1);
+    if (std::is_unsigned<Key>()) {
+      fill(fill_val | ~fill_val);
+    } else {
+      fill(~fill_val);
+    }
+  }
+
+  bool isfilled(Key const &val) const {
     for (std::size_t i = 0; i < bytes / sizeof(Key); ++i)
       if (key[i] != val)
         return false;
     return true;
+  }
+
+  bool isfilled() const {
+    Key fill_val = 1 << (sizeof(Key) * CHAR_BIT - 1);
+    if (std::is_unsigned<Key>()) {
+      return isfilled(fill_val | ~fill_val);
+    } else {
+      return isfilled(~fill_val);
+    }
   }
 
   // operator Key *() { return key; }

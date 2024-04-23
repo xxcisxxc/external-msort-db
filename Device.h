@@ -137,11 +137,12 @@ public:
    */
   ::ssize_t ewrite(char const *buffer, std::size_t const bytes,
                    std::size_t const offset) {
-    if (_used + bytes + offset > _capacity) {
+    if (bytes + offset > _capacity) {
       return -1;
     }
 
     _timer.start();
+    _file.clear();
     _file.seekp(offset);
     _file.write(buffer, bytes);
     _timer.stop();
@@ -149,11 +150,16 @@ public:
       return -1;
     }
 
-    ::ssize_t count = _file.tellp();
+    std::size_t count = _file.tellp();
+    if (_used < count) {
+      _used = count;
+    }
+
     count -= offset;
 
-    _file.seekg(0, std::ios::end);
-    _used = _file.tellg();
+    // _file.seekg(0, std::ios::end);
+    // _used = _file.tellg();
+    _file.flush();
 
     if (_timer.get_duration_ms() < reach_time(bytes)) {
       double const sleep_time = reach_time(bytes) - _timer.get_duration_ms();
@@ -190,7 +196,8 @@ public:
                       offset);
   }
 
-  std::size_t getConsumption() { return _used; }
+  std::size_t get_pos() const { return _used; }
+  void eseek(std::size_t const offset) { _used = offset; }
 };
 
 class ReadDevice {
