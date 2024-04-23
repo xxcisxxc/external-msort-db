@@ -50,8 +50,9 @@ bool ValidateIterator::next() {
     }
     Record_t &buffer = const_cast<Record_t &>(_plan->_buffer[ind]);
     while (_out.read_only(buffer, Record_t::bytes) > 0) {
+      // traceprintf("record %lu: %d %d\n", _count, buffer.key[0],
+      // buffer.key[1]);
       ++_count;
-      traceprintf("record: %d %d\n", buffer.key[0], buffer.key[1]);
       _plan->_outputWitnessRecord->x_or(buffer);
       ind ^= 1; // prev and next buffer
       if (buffer < _plan->_buffer[ind]) {

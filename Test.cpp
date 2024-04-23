@@ -6,7 +6,7 @@
 #include "Validate.h"
 #include "defs.h"
 
-constexpr std::size_t kCount = 66;
+constexpr std::size_t kCount = 2560;
 constexpr std::size_t kSize = 20;
 
 int main(/*int argc, char *argv[]*/) {

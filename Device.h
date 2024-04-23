@@ -65,6 +65,8 @@ private:
   std::fstream _file;
   Timer _timer; // for timing
 
+  std::size_t _base;
+
 protected:
   /**
    * @brief Read / Write Latency
@@ -88,7 +90,7 @@ public:
          std::size_t const capacity)
       : _latency(latency), _bandwidth(bandwidth * 1e-3 * 1024 * 1024),
         _capacity(capacity == ULONG_MAX ? ULONG_MAX : capacity * 1024 * 1024),
-        _used(0) {
+        _used(0), _base(0) {
     // Asynchronous I/O should relies on C++ async & future
     _file.open(name, std::ios::in | std::ios::out | std::ios::binary |
                          std::ios::trunc);
@@ -107,17 +109,18 @@ public:
    */
   ::ssize_t eread(char *buffer, std::size_t const bytes,
                   std::size_t const offset) {
-    if (offset + bytes > _used) {
+    if (offset + bytes + _base > _used) {
       return -1;
     }
 
     _timer.start();
-    _file.seekg(offset);
+    _file.seekg(offset + _base);
     _file.read(buffer, bytes);
     _timer.stop();
     if (_file.fail() || _file.bad()) {
       return -1;
     }
+
     if (_timer.get_duration_ms() < reach_time(bytes)) {
       double const sleep_time = reach_time(bytes) - _timer.get_duration_ms();
       std::size_t const sleep_time_us =
@@ -137,13 +140,13 @@ public:
    */
   ::ssize_t ewrite(char const *buffer, std::size_t const bytes,
                    std::size_t const offset) {
-    if (bytes + offset > _capacity) {
+    if (bytes + offset + _base > _capacity) {
       return -1;
     }
 
     _timer.start();
     _file.clear();
-    _file.seekp(offset);
+    _file.seekp(offset + _base);
     _file.write(buffer, bytes);
     _timer.stop();
     if (_file.fail() || _file.bad()) {
@@ -155,10 +158,8 @@ public:
       _used = count;
     }
 
-    count -= offset;
+    count -= (offset + _base);
 
-    // _file.seekg(0, std::ios::end);
-    // _used = _file.tellg();
     _file.flush();
 
     if (_timer.get_duration_ms() < reach_time(bytes)) {
@@ -172,10 +173,18 @@ public:
   }
 
   ::ssize_t eappend(char const *buffer, std::size_t const bytes) {
-    return ewrite(buffer, bytes, _used);
+    return ewrite(buffer, bytes, _used - _base);
   }
 
   inline void clear() { _used = 0; }
+
+  std::size_t get_pos() const { return _used; }
+
+  void eseek(std::size_t const offset) { _used = offset; }
+
+  void set_base(std::size_t const base) { _base = base; }
+
+  std::size_t get_base() const { return _base; }
 
   /**
    * @brief Destroy the Device object
@@ -195,9 +204,6 @@ public:
     return std::async(std::launch::async, &Device::ewrite, this, buffer, bytes,
                       offset);
   }
-
-  std::size_t get_pos() const { return _used; }
-  void eseek(std::size_t const offset) { _used = offset; }
 };
 
 class ReadDevice {

@@ -42,3 +42,16 @@ void external_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
 void external_spill_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
                           Device *dev_exin, Index_r &index, ExRunInfo run_info,
                           RowCount const n_runs_hdd);
+
+inline void fill_run(Device *dev, RecordArr_t &out,
+                     std::size_t const fill_records) {
+  out[0].fill();
+  uint64_t end_pos = dev->get_pos() + fill_records * Record_t::bytes;
+  dev->eappend(out[0], Record_t::bytes);
+
+  uint64_t const base = dev->get_base();
+  dev->set_base(0);
+  dev->ewrite(out[0], Record_t::bytes, end_pos - Record_t::bytes);
+
+  dev->set_base(base);
+}

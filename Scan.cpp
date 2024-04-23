@@ -53,9 +53,9 @@ bool ScanIterator::next() {
   // witness for input
   (*(_plan->_inputWitnessRecord.get())).x_or(records[_count % _kRowCache]);
 
-  traceprintf("produced %lu - %d %d\n", (unsigned long)(_count),
-              _plan->_rcache[_count % _kRowCache].key[0],
-              _plan->_rcache[_count % _kRowCache].key[1]);
+  // traceprintf("produced %lu - %d %d\n", (unsigned long)(_count),
+  //             _plan->_rcache[_count % _kRowCache].key[0],
+  //             _plan->_rcache[_count % _kRowCache].key[1]);
 
   ++_count;
   return true;

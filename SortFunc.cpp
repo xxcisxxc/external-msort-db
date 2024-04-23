@@ -284,9 +284,7 @@ void external_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
           maxToBeRead * Record_t::bytes,
           (run_info.exrun_size * popped.run_id + popped.record_id) *
               Record_t::bytes);
-      //}
-    }
-    // if
+    } // if
     if (popped.record_id < run_info.exrun_size) {
       ltree.insert(popped.run_id, popped.record_id);
     } else {
@@ -296,15 +294,13 @@ void external_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
       // TODO: check return value
       dev.hd_out->eappend(reinterpret_cast<char *>(out.out.data()),
                           out.out_size * Record_t::bytes);
-      printf("out_ind: %lu\n", out_ind);
       out_ind = 0;
     } // if
-  }
+  }   // while
   if (out_ind > 0) {
     // TODO: check return value
     dev.hd_out->eappend(reinterpret_cast<char *>(out.out.data()),
                         out_ind * Record_t::bytes);
-    printf("out_ind: %lu\n", out_ind);
   } // if
 } // external_merge
 

@@ -20,11 +20,19 @@ static inline std::shared_ptr<To> ptr_cast(std::shared_ptr<From> ptr) {
 static inline std::size_t mem_nruns() { return 4; } // mem_nruns
 
 static inline std::size_t mem_nrecords() {
-  // return kMemSize / (Record_t::bytes);
   return cache_nrecords() * mem_nruns();
 }
 
+static inline std::size_t mmem_nrecords() {
+  // return kMemSize / (Record_t::bytes);
+  return 32;
+}
+
+static inline std::size_t ssd_nruns() { return 8; } // ssd_nruns
+
 static inline std::size_t ssd_nrecords() {
   // return kSSDSize / (Record_t::bytes);
-  return 256;
+  return mem_nrecords() * ssd_nruns();
 }
+
+static inline std::size_t out_nrecords() { return 16; }
