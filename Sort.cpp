@@ -142,8 +142,8 @@ bool SortIterator::next() {
     exrun_size = _kRowSSDRun;
     n_runs = (_consumed + exrun_size - 1) / exrun_size;
     run_size = _kRowMergeRun / n_runs;
-    if (run_size < 4) { // TODO: setup a better threshold
-      run_size = 4;
+    if (run_size < minm_nrecords()) {
+      run_size = minm_nrecords();
     }
     n_subruns = _kRowMergeRun / run_size;
     while (n_subruns < n_runs) {
@@ -164,8 +164,8 @@ bool SortIterator::next() {
       exrun_size = n_subruns * exrun_size;
       n_runs = (_consumed + exrun_size - 1) / exrun_size;
       run_size = _kRowMergeRun / n_runs;
-      if (run_size < 4) { // TODO: setup a better threshold
-        run_size = 4;
+      if (run_size < minm_nrecords()) { 
+        run_size = minm_nrecords();
       }
       n_subruns = _kRowMergeRun / run_size;
     }

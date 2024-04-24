@@ -9,20 +9,20 @@ DOCS=Tasks.txt
 SCRS=
 
 # default target
-all : test ExternalSort.exe
+all : ExternalSort.exe
 
 # headers and code sources
 HDRS=	defs.h \
-		Iterator.h Scan.h Filter.h Sort.h \
+		Iterator.h Scan.h Sort.h \
 		Record.h Device.h SortFunc.h Consts.h \
 		Utils.h Validate.h LoserTree.h
 SRCS=	defs.cpp Assert.cpp \
-		Iterator.cpp Scan.cpp Filter.cpp Sort.cpp \
+		Iterator.cpp Scan.cpp Sort.cpp \
 		SortFunc.cpp Validate.cpp
 
 # compilation targets
 OBJS=	defs.o Assert.o \
-		Iterator.o Scan.o Filter.o Sort.o \
+		Iterator.o Scan.o Sort.o \
 		SortFunc.o Validate.o
 
 ExternalSort.exe : Makefile $(OBJS) ExternalSort.cpp $(HDRS)

@@ -11,6 +11,7 @@
 #include <stdexcept>
 #include <string>
 #include <utility>
+#include <limits>
 
 /**
  * @brief A Record is a row with multiple columns.
