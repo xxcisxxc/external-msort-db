@@ -1,7 +1,6 @@
 #pragma once
 
 #include <algorithm>
-#include <climits>
 #include <cstddef>
 #include <cstdio>
 #include <cstdlib>
@@ -21,7 +20,7 @@
  * @tparam Key The type of the key.
  * @tparam Val The type of the value array.
  */
-template <class Key = char> struct Record {
+template <class Key = unsigned char> struct Record {
   static inline std::size_t bytes = sizeof(Key);
 
   Key key[1];
@@ -115,14 +114,7 @@ template <class Key = char> struct Record {
       key[i] = val;
   }
 
-  void fill() {
-    constexpr Key fill_val = 1 << (sizeof(Key) * CHAR_BIT - 1);
-    if (std::is_unsigned<Key>()) {
-      fill(fill_val | ~fill_val);
-    } else {
-      fill(~fill_val);
-    }
-  }
+  void fill() { fill(max()); }
 
   bool isfilled(Key const &val) const {
     for (std::size_t i = 0; i < bytes / sizeof(Key); ++i)
@@ -131,23 +123,13 @@ template <class Key = char> struct Record {
     return true;
   }
 
-  bool isfilled() const {
-    constexpr Key fill_val = 1 << (sizeof(Key) * CHAR_BIT - 1);
-    if (std::is_unsigned<Key>()) {
-      return isfilled(fill_val | ~fill_val);
-    } else {
-      return isfilled(~fill_val);
-    }
-  }
+  bool isfilled() const { return isfilled(max()); }
+
+  static inline constexpr Key max() { return std::numeric_limits<Key>::max(); }
+  static inline constexpr Key min() { return std::numeric_limits<Key>::min(); }
 
   // operator Key *() { return key; }
   operator char *() { return reinterpret_cast<char *>(key); }
-
-  // static void copy_rec(const Record &source, Record *destination) {
-  //   for (std::size_t i = 0; i < bytes / sizeof(Key); ++i) {
-  //     destination->key[i] = source.key[i];
-  //   }
-  // }
 };
 
 /**
@@ -163,81 +145,13 @@ using Record_t = Record<>;
  * @tparam Key The type of the key.
  * @tparam Val The type of the value array.
  */
-template <class Key = char> struct RecordArr {
+template <class Key = unsigned char> struct RecordArr {
 private:
   using shared_arr = std::shared_ptr<Record<Key>>;
   shared_arr arr;
   const std::size_t sz = 0;
 
 public:
-  struct Iterator {
-    using iterator_category = std::random_access_iterator_tag;
-    using difference_type = std::ptrdiff_t;
-    using value_type = Record<Key>;
-    using pointer = Record<Key> *;
-    using reference = Record<Key> &;
-    Iterator(pointer ptr_) : ptr(ptr_) {}
-
-    reference operator*() const { return *ptr; }
-    pointer operator->() { return ptr; }
-    Iterator &operator++() {
-      ptr = reinterpret_cast<pointer>(reinterpret_cast<char *>(ptr) +
-                                      value_type::bytes);
-      return *this;
-    }
-    Iterator operator++(int) {
-      Iterator tmp = *this;
-      ++*this;
-      return tmp;
-    }
-    Iterator &operator--() {
-      ptr = reinterpret_cast<pointer>(reinterpret_cast<char *>(ptr) +
-                                      value_type::bytes);
-      return *this;
-    }
-    Iterator operator--(int) {
-      Iterator tmp = *this;
-      --*this;
-      return tmp;
-    }
-    Iterator &operator+=(difference_type const n) {
-      ptr = reinterpret_cast<pointer>(reinterpret_cast<char *>(ptr) +
-                                      n * value_type::bytes);
-      return *this;
-    }
-    Iterator operator+(difference_type const n) const {
-      Iterator tmp = *this;
-      return tmp += n;
-    }
-    Iterator &operator-=(difference_type const n) {
-      ptr = reinterpret_cast<pointer>(reinterpret_cast<char *>(ptr) -
-                                      n * value_type::bytes);
-      return *this;
-    }
-    Iterator operator-(difference_type const n) const {
-      Iterator tmp = *this;
-      return tmp -= n;
-    }
-    difference_type operator-(Iterator const &rhs) const {
-      return (reinterpret_cast<char *>(ptr) -
-              reinterpret_cast<char *>(rhs.ptr)) /
-             Record<Key>::bytes;
-    }
-    reference operator[](difference_type const n) const {
-      return *reinterpret_cast<Record<Key> *>(reinterpret_cast<char *>(ptr) +
-                                              n * Record<Key>::bytes);
-    }
-    bool operator==(Iterator const &rhs) const { return ptr == rhs.ptr; }
-    bool operator!=(Iterator const &rhs) const { return ptr != rhs.ptr; }
-    bool operator<(Iterator const &rhs) const { return ptr < rhs.ptr; }
-    bool operator>(Iterator const &rhs) const { return ptr > rhs.ptr; }
-    bool operator<=(Iterator const &rhs) const { return ptr <= rhs.ptr; }
-    bool operator>=(Iterator const &rhs) const { return ptr >= rhs.ptr; }
-
-  private:
-    pointer ptr;
-  };
-
   RecordArr() = default;
   RecordArr(std::size_t const size) : arr(new Record<Key>[size]), sz(size) {}
   RecordArr(shared_arr const &arr_, std::size_t const size)
@@ -257,11 +171,6 @@ public:
                               " out of range " + std::to_string(sz));
     return *reinterpret_cast<Record<Key> *>(
         reinterpret_cast<char *>(arr.get()) + idx * Record<Key>::bytes);
-  }
-  Iterator begin() { return Iterator(arr.get()); }
-  Iterator end() {
-    return Iterator(reinterpret_cast<Record<Key> *>(
-        reinterpret_cast<char *>(arr.get()) + sz * Record<Key>::bytes));
   }
   Record<Key> *data() const { return arr.get(); }
   shared_arr ptr() const { return arr; }

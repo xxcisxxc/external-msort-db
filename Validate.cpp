@@ -3,7 +3,6 @@
 #include "Device.h"
 #include "Record.h"
 #include "defs.h"
-#include <climits>
 
 ValidatePlan::ValidatePlan(Plan *const input)
     : _input(input), _outputWitnessRecord(new Record_t),
@@ -45,8 +44,8 @@ bool ValidateIterator::next() {
 
   if (generated) {
     if (_count == 0) {
-      const_cast<Record_t &>(_plan->_buffer[0]).fill(CHAR_MIN);
-      const_cast<Record_t &>(_plan->_buffer[1]).fill(CHAR_MIN);
+      const_cast<Record_t &>(_plan->_buffer[0]).fill(Record_t::min());
+      const_cast<Record_t &>(_plan->_buffer[1]).fill(Record_t::min());
     }
     Record_t &buffer = const_cast<Record_t &>(_plan->_buffer[ind]);
     while (_out.read_only(buffer, Record_t::bytes) > 0) {
