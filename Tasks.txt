@@ -27,3 +27,15 @@ Test with 0 rows and with 1 row, also 2, 3, 7 rows
 Add Plan & Iterator that verify a set of rows
 Test with 0, 1, 2, 3, 10, 29, 100, 576, 1000 rows
 ...
+
+1. Duplicate Elimination
+2. ReadMe:
+    - main functions & main technique in which file?
+    - Individual Contribution
+    - How long execution time
+3. Input Data:
+    - alphanumeric
+    - Store input data (also generate duplicate data)
+4. Output Data:
+5. Trace Data:
+    - Add trace for each functions?
