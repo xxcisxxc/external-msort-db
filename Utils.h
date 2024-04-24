@@ -60,5 +60,4 @@ static inline std::size_t ssd_nrecords() {
 static inline std::size_t minm_nrecords() {
   constexpr std::size_t min_size = 100 * 5 * 1024 * 1024 / 1000;
   return min_size / Record_t::bytes;
-} //minm_nrecords
-
+} // minm_nrecords

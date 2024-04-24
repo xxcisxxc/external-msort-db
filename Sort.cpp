@@ -117,6 +117,7 @@ bool SortIterator::next() {
     }
 
     if (_kRowSSDRun < _consumed && _consumed < 2 * _kRowSSDRun) {
+      // input ends during spilling ssd->hdd
       uint32_t n_runs_hdd =
           (_consumed - _kRowSSDRun + _kRowMemRun - 1) / _kRowMemRun;
       uint32_t run_size = _kRowMergeRun / (_kRunSSD + n_runs_hdd);
@@ -137,7 +138,7 @@ bool SortIterator::next() {
       fill_run(hdd, out, _kRowMemRun - ssd_rem);
     }
 
-    // merge all the remaining hdd runs to hddout
+    // merge all the remaining hdd runs to hddout (nested)
     uint32_t exrun_size, n_runs, run_size, n_subruns;
     exrun_size = _kRowSSDRun;
     n_runs = (_consumed + exrun_size - 1) / exrun_size;
@@ -164,7 +165,7 @@ bool SortIterator::next() {
       exrun_size = n_subruns * exrun_size;
       n_runs = (_consumed + exrun_size - 1) / exrun_size;
       run_size = _kRowMergeRun / n_runs;
-      if (run_size < minm_nrecords()) { 
+      if (run_size < minm_nrecords()) {
         run_size = minm_nrecords();
       }
       n_subruns = _kRowMergeRun / run_size;
