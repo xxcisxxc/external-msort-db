@@ -36,11 +36,10 @@ private:
     RecordArr_t out;
     RecordArr_t work;
     MemRun(RecordArr_t const &records)
-        : out(records.ptr(), kCacheSize / Record_t::bytes),
-          work(records.ptr(kCacheSize),
-               (kMemSize - kCacheSize) / Record_t::bytes) {}
+        : out(records.ptr(), out_nrecords()),
+          work(records.ptr(kCacheSize), mmem_nrecords()) {}
     RecordArr_t whole() const {
-      return RecordArr_t(out.ptr(), out.size() + work.size());
+      return RecordArr_t(out.ptr(), fmem_nrecords());
     }
   }; // struct MemRun
   Plan *const _input;
@@ -65,7 +64,15 @@ private:
   SortPlan const *const _plan;
   Iterator *const _input;
   RowCount _consumed, _produced;
+
   RowCount const _kRowCacheRun;
+  RowCount const _kRowMergeRun;
   RowCount const _kRowMemRun;
   RowCount const _kRowMemOut;
+  RowCount const _kRowSSDRun;
+
+  using RunCount = uint32_t;
+  RunCount const _kRunCache;
+  RunCount const _kRunMem;
+  RunCount const _kRunSSD;
 }; // class SortIterator

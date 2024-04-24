@@ -9,7 +9,7 @@ ScanPlan::ScanPlan(RowCount const count)
     : _count(count),
       _rcache(std::shared_ptr<Record_t>(
                   reinterpret_cast<Record_t *>(new char[kCacheSize])),
-              kCacheSize / Record_t::bytes),
+              fcache_nrecords()),
       _inputWitnessRecord(new Record_t) {
   TRACE(true);
   _inputWitnessRecord->fill(0);

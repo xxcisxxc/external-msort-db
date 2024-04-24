@@ -33,9 +33,10 @@ Iterator *SortPlan::init() const {
 
 SortIterator::SortIterator(SortPlan const *const plan)
     : _plan(plan), _input(plan->_input->init()), _consumed(0), _produced(0),
-      _kRowCacheRun(cache_nrecords()),
-      _kRowMemRun((kMemSize - kCacheSize) / Record_t::bytes),
-      _kRowMemOut(kCacheSize / Record_t::bytes) {
+      _kRowCacheRun(cache_nrecords()), _kRowMergeRun(mmem_nrecords()),
+      _kRowMemRun(mem_nrecords()), _kRowMemOut(out_nrecords()),
+      _kRowSSDRun(ssd_nrecords()), _kRunCache(cache_nruns()),
+      _kRunMem(mem_nruns()), _kRunSSD(ssd_nruns()) {
   TRACE(true);
 } // SortIterator::SortIterator
 
@@ -61,8 +62,7 @@ bool SortIterator::next() {
       break;
     }
     ++_consumed;
-  } while ((_consumed % cache_nrecords()) !=
-           0); // run_size: 8 (cache-sized run)
+  } while ((_consumed % _kRowCacheRun) != 0);
 
   Index_r indexr = _plan->_icache.index;
   RecordArr_t in = _plan->_rmem.work;
@@ -73,85 +73,83 @@ bool SortIterator::next() {
 
   if (_produced >= _consumed) {
     // final merge step
-    if (_consumed <= mem_nrecords()) {
+    if (_consumed <= _kRowMemRun) {
       // memory is not full, merge all cache-sized runs in memory to out
-      inmem_merge(in, {out_nrecords(), out}, hddout, indexr,
-                  {cache_nrecords(),
-                   (_consumed + cache_nrecords() - 1) / cache_nrecords()});
+      inmem_merge(
+          in, {_kRowMemOut, out}, hddout, indexr,
+          {_kRowCacheRun, (_consumed + _kRowCacheRun - 1) / _kRowCacheRun});
       finished = true;
       return false;
     }
-    if (mem_nrecords() < _consumed && _consumed < 2 * mem_nrecords()) {
+    if (_kRowMemRun < _consumed && _consumed < 2 * _kRowMemRun) {
       // input ends during spilling mem->ssd
-      inmem_spill_merge(in, {out_nrecords(), out}, {ssd, hddout}, indexr,
-                        {cache_nrecords(), mem_nruns()},
-                        (_consumed - mem_nrecords() + cache_nrecords() - 1) /
-                            cache_nrecords());
+      inmem_spill_merge(in, {_kRowMemOut, out}, {ssd, hddout}, indexr,
+                        {_kRowCacheRun, _kRunMem},
+                        (_consumed - _kRowMemRun + _kRowCacheRun - 1) /
+                            _kRowCacheRun);
       finished = true;
       return false;
     }
 
-    RowCount inmem_rem = _consumed % mem_nrecords();
+    RowCount inmem_rem = _consumed % _kRowMemRun;
     if (inmem_rem != 0) {
       // hdd: spill from ssd to hdd
       // ssd: merge remaining runs in memory to ssd
       Device *out_dev =
-          (ssd_nrecords() < _consumed && _consumed <= 2 * ssd_nrecords()) ? hdd
-                                                                          : ssd;
+          (_kRowSSDRun < _consumed && _consumed <= 2 * _kRowSSDRun) ? hdd : ssd;
 
       // merge remaining runs in memory to ssd (create the last run in ssd)
-      inmem_merge(in, {out_nrecords(), out}, out_dev, indexr,
-                  {cache_nrecords(),
-                   (inmem_rem + cache_nrecords() - 1) / cache_nrecords()});
+      inmem_merge(
+          in, {_kRowMemOut, out}, out_dev, indexr,
+          {_kRowCacheRun, (inmem_rem + _kRowCacheRun - 1) / _kRowCacheRun});
       // fill the last run in ssd
-      fill_run(out_dev, out, mem_nrecords() - inmem_rem);
+      fill_run(out_dev, out, _kRowMemRun - inmem_rem);
     }
 
-    if (_consumed <= ssd_nrecords()) {
+    if (_consumed <= _kRowSSDRun) {
       // input ends with multiple runs in ssd (none in hdd), merge to out
-      uint32_t n_runs = (_consumed + mem_nrecords() - 1) / mem_nrecords();
-      uint32_t run_size = mmem_nrecords() / n_runs;
-      external_merge(in, {out_nrecords(), out}, {ssd, hddout}, indexr,
-                     {{run_size, n_runs}, mem_nrecords()});
+      uint32_t n_runs = (_consumed + _kRowMemRun - 1) / _kRowMemRun;
+      uint32_t run_size = _kRowMergeRun / n_runs;
+      external_merge(in, {_kRowMemOut, out}, {ssd, hddout}, indexr,
+                     {{run_size, n_runs}, _kRowMemRun});
       finished = true;
       return false;
     }
 
-    if (ssd_nrecords() < _consumed && _consumed < 2 * ssd_nrecords()) {
+    if (_kRowSSDRun < _consumed && _consumed < 2 * _kRowSSDRun) {
       uint32_t n_runs_hdd =
-          (_consumed - ssd_nrecords() + mem_nrecords() - 1) / mem_nrecords();
-      uint32_t run_size = mmem_nrecords() / (ssd_nruns() + n_runs_hdd);
-      external_spill_merge(in, {out_nrecords(), out}, {ssd, hddout}, hdd,
-                           indexr, {{run_size, ssd_nruns()}, mem_nrecords()},
-                           n_runs_hdd);
+          (_consumed - _kRowSSDRun + _kRowMemRun - 1) / _kRowMemRun;
+      uint32_t run_size = _kRowMergeRun / (_kRunSSD + n_runs_hdd);
+      external_spill_merge(in, {_kRowMemOut, out}, {ssd, hddout}, hdd, indexr,
+                           {{run_size, _kRunSSD}, _kRowMemRun}, n_runs_hdd);
       finished = true;
       return false;
     }
 
-    RowCount ssd_rem = _consumed % ssd_nrecords();
+    RowCount ssd_rem = _consumed % _kRowSSDRun;
     if (ssd_rem != 0) {
       // merge remaining runs in ssd to hdd (create the last run in hdd)
-      uint32_t n_runs = (ssd_rem + mem_nrecords() - 1) / mem_nrecords();
-      uint32_t run_size = mmem_nrecords() / n_runs;
-      external_merge(in, {out_nrecords(), out}, {ssd, hdd}, indexr,
-                     {{run_size, n_runs}, mem_nrecords()});
+      uint32_t n_runs = (ssd_rem + _kRowMemRun - 1) / _kRowMemRun;
+      uint32_t run_size = _kRowMergeRun / n_runs;
+      external_merge(in, {_kRowMemOut, out}, {ssd, hdd}, indexr,
+                     {{run_size, n_runs}, _kRowMemRun});
       // fill the last run in hdd
-      fill_run(hdd, out, mem_nrecords() - ssd_rem);
+      fill_run(hdd, out, _kRowMemRun - ssd_rem);
     }
 
     // merge all the remaining hdd runs to hddout
     uint32_t exrun_size, n_runs, run_size, n_subruns;
-    exrun_size = ssd_nrecords();
+    exrun_size = _kRowSSDRun;
     n_runs = (_consumed + exrun_size - 1) / exrun_size;
-    run_size = mmem_nrecords() / n_runs;
+    run_size = _kRowMergeRun / n_runs;
     if (run_size < 4) { // TODO: setup a better threshold
       run_size = 4;
     }
-    n_subruns = mmem_nrecords() / run_size;
+    n_subruns = _kRowMergeRun / run_size;
     while (n_subruns < n_runs) {
       for (uint32_t i = 0; i < n_runs; i += n_subruns) {
         external_merge(
-            in, {out_nrecords(), out}, {hdd, hdd}, indexr,
+            in, {_kRowMemOut, out}, {hdd, hdd}, indexr,
             {{run_size, (i + n_subruns > n_runs) ? n_runs - i : n_subruns},
              exrun_size});
         if (i + n_subruns > n_runs) {
@@ -165,22 +163,22 @@ bool SortIterator::next() {
       }
       exrun_size = n_subruns * exrun_size;
       n_runs = (_consumed + exrun_size - 1) / exrun_size;
-      run_size = mmem_nrecords() / n_runs;
+      run_size = _kRowMergeRun / n_runs;
       if (run_size < 4) { // TODO: setup a better threshold
         run_size = 4;
       }
-      n_subruns = mmem_nrecords() / run_size;
+      n_subruns = _kRowMergeRun / run_size;
     }
-    external_merge(in, {out_nrecords(), out}, {hdd, hddout}, indexr,
+    external_merge(in, {_kRowMemOut, out}, {hdd, hddout}, indexr,
                    {{run_size, n_runs}, exrun_size});
     finished = true;
     return false;
   } // if produced >= consumed
 
-  if (mem_nrecords() < _consumed && _consumed <= 2 * mem_nrecords()) {
+  if (_kRowMemRun < _consumed && _consumed <= 2 * _kRowMemRun) {
     // spilling mem->ssd: dump the candidate cache run to ssd
     ssd->eappend(reinterpret_cast<char *>((in + mem_offset).data()),
-                 cache_nrecords() * Record_t::bytes);
+                 _kRowCacheRun * Record_t::bytes);
   }
 
   // sort cache run and dump to memory
@@ -190,61 +188,61 @@ bool SortIterator::next() {
   RecordArr_t work = _plan->_rmem.work + mem_offset;
   incache_sort(records, work, indext, _consumed - _produced);
   mem_offset += _consumed - _produced;
-  if (_consumed % cache_nrecords() != 0) {
+  if (_consumed % _kRowCacheRun != 0) {
     // last cache run is not full, fill
-    work[_consumed % cache_nrecords()].fill();
+    work[_consumed % _kRowCacheRun].fill();
   }
   _produced = _consumed;
 
-  if (_consumed % mem_nrecords() == 0) {
+  if (_consumed % _kRowMemRun == 0) {
     // when memory is full
 
     mem_offset = 0; // reset offset
 
-    if (_consumed >= 2 * mem_nrecords()) {
+    if (_consumed >= 2 * _kRowMemRun) {
       // not spilling, eager merge mem runs to ssd
       Device *out_dev =
-          (ssd_nrecords() < _consumed && _consumed <= 2 * ssd_nrecords()) ? hdd
-                                                                          : ssd;
+          (_kRowSSDRun < _consumed && _consumed <= 2 * _kRowSSDRun) ? hdd : ssd;
 
       // out_dev=ssd: merge all cache-sized runs in memory to ssd
       // out_dev=hdd: spill from ssd to hdd
-      inmem_merge(in, {out_nrecords(), out}, out_dev, indexr,
-                  {cache_nrecords(), mem_nruns()});
+      inmem_merge(in, {_kRowMemOut, out}, out_dev, indexr,
+                  {_kRowCacheRun, _kRunMem});
     }
-    if (_consumed == 2 * mem_nrecords()) {
+    if (_consumed == 2 * _kRowMemRun) {
       // merge the first block of unmerged runs in ssd due to spilling
       ssd->eread(reinterpret_cast<char *>(in.data()),
-                 mem_nrecords() * Record_t::bytes, 0);
+                 _kRowMemRun * Record_t::bytes, 0);
       uint64_t cur_pos = ssd->get_pos();
       ssd->clear();
-      inmem_merge(in, {out_nrecords(), out}, ssd, indexr,
-                  {cache_nrecords(), mem_nruns()});
+      inmem_merge(in, {_kRowMemOut, out}, ssd, indexr,
+                  {_kRowCacheRun, _kRunMem});
       ssd->eseek(cur_pos);
     }
   } // if
 
-  if (_consumed % ssd_nrecords() == 0) {
+  if (_consumed % _kRowSSDRun == 0) {
     // when ssd is full
 
-    uint32_t run_size = mmem_nrecords() / ssd_nruns();
-    if (_consumed >= 2 * ssd_nrecords()) {
+    uint32_t run_size = _kRowMergeRun / _kRunSSD;
+    if (_consumed >= 2 * _kRowSSDRun) {
       // merge all ssd runs to hdd
-      external_merge(in, {out_nrecords(), out}, {ssd, hdd}, indexr,
-                     {{run_size, ssd_nruns()}, mem_nrecords()});
+      external_merge(in, {_kRowMemOut, out}, {ssd, hdd}, indexr,
+                     {{run_size, _kRunSSD}, _kRowMemRun});
       ssd->clear();
     }
-    if (_consumed == 2 * ssd_nrecords()) {
+    if (_consumed == 2 * _kRowSSDRun) {
       // merge all spilled ssd runs to hdd (first to ssd then bulk write to hdd)
-      external_merge(in, {out_nrecords(), out}, {hdd, ssd}, indexr,
-                     {{run_size, ssd_nruns()}, mem_nrecords()});
-      for (uint32_t i = 0; i < ssd_nruns(); ++i) {
-        ssd->eread(reinterpret_cast<char *>(in.data()),
-                   mem_nrecords() * Record_t::bytes,
-                   i * mem_nrecords() * Record_t::bytes);
-        hdd->ewrite(reinterpret_cast<char *>(in.data()),
-                    mem_nrecords() * Record_t::bytes,
-                    i * mem_nrecords() * Record_t::bytes);
+      external_merge(in, {_kRowMemOut, out}, {hdd, ssd}, indexr,
+                     {{run_size, _kRunSSD}, _kRowMemRun});
+      RecordArr_t whole = _plan->_rmem.whole();
+      for (uint32_t i = 0; i < _kRunSSD; ++i) {
+        ssd->eread(reinterpret_cast<char *>(whole.data()),
+                   _kRowMemRun * Record_t::bytes,
+                   i * _kRowMemRun * Record_t::bytes);
+        hdd->ewrite(reinterpret_cast<char *>(whole.data()),
+                    _kRowMemRun * Record_t::bytes,
+                    i * _kRowMemRun * Record_t::bytes);
       }
       ssd->clear();
     }

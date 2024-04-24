@@ -1,9 +1,7 @@
 #include "SortFunc.h"
 #include "LoserTree.h"
 #include "Record.h"
-#include "defs.h"
 #include <algorithm>
-#include <climits>
 #include <cmath>
 #include <cstddef>
 #include <cstdio>

@@ -9,7 +9,7 @@ DOCS=Tasks.txt
 SCRS=
 
 # default target
-all : test Test.exe
+all : test ExternalSort.exe
 
 # headers and code sources
 HDRS=	defs.h \
@@ -25,13 +25,13 @@ OBJS=	defs.o Assert.o \
 		Iterator.o Scan.o Filter.o Sort.o \
 		SortFunc.o Validate.o
 
-Test.exe : Makefile $(OBJS) Test.cpp $(HDRS)
-	$(CPP) $(CPPFLAGS) -o Test.exe Test.cpp $(OBJS)
+ExternalSort.exe : Makefile $(OBJS) ExternalSort.cpp $(HDRS)
+	$(CPP) $(CPPFLAGS) -o ExternalSort.exe ExternalSort.cpp $(OBJS)
 
-trace : Test.exe Makefile
+trace : ExternalSort.exe Makefile
 	@date > trace
-	./Test.exe >> trace
-	@size -t Test.exe $(OBJS) | sort -r >> trace
+	./ExternalSort.exe >> trace
+	@size -t ExternalSort.exe $(OBJS) | sort -r >> trace
 
 $(OBJS) : $(HDRS)
 
@@ -58,7 +58,7 @@ $(TEST_OBJS) : catch2/catch_amalgamated.hpp $(HDRS) $(TEST_SRCS)
 $(TEST_LIBS) : catch2/catch_amalgamated.hpp
 
 clean :
-	@rm -f $(OBJS) Test.exe Test.exe.stackdump trace
+	@rm -f $(OBJS) ExternalSort.exe ExternalSort.exe.stackdump trace
 	@rm -f $(TEST_OBJS) $(TEST_DIR)/test_record $(TEST_LIBS)
 
 # generate compile_commands.json for clangd
