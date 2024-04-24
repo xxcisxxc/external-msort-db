@@ -13,7 +13,7 @@ template <typename Compare> class LoserTree {
 
 public:
   LoserTree(Level const h, const Compare &cmp, Index_r &index)
-      : height(h), heap(index), cmp(cmp), cap(capacity()) {
+      : height(h), heap(index), cmp(cmp), cap(RunId(1 << height)) {
     TRACE(true);
     uint32_t cap = capacity();
     for (uint32_t i = 0; i < cap; i++) {
@@ -58,7 +58,7 @@ public:
     return compare;
   }
 
-  RunId capacity() const { return RunId(1 << height); }
+  RunId capacity() const { return cap; }
   RunId root() const { return RunId(0); }
   RunId leaf(RunId index, RunId &slot) const {
     return slot = capacity() + index;
