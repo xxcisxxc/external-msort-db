@@ -64,7 +64,7 @@ void incache_sort(RecordArr_t const &records, RecordArr_t &out, Index_t &index,
 } // incache_sort (out-of-place)
 
 void inmem_merge(RecordArr_t const &records, OutBuffer out, Device *hd,
-                 Index_r &index, RunInfo run_info) {
+                 Index_r &index, RunInfo run_info, RowCount *duplicatesCount) {
   RowCount const run_size = run_info.run_size;
   RowCount const n_runs = run_info.n_runs;
 
@@ -95,14 +95,31 @@ void inmem_merge(RecordArr_t const &records, OutBuffer out, Device *hd,
   }
 
   std::size_t out_ind = 0;
-
+  Record_t &_prev = *(new Record_t);
+  bool first = true;
+  RowCount duplicateCount = 0;
   while (!ltree.empty()) {
     MergeInd popped = ltree.pop();
     if (popped.run_id >= n_runs || get_record(popped).isfilled()) {
       ltree.deleteRecordId(popped.run_id);
       continue;
     }
-    out.out[out_ind++] = get_record(popped);
+    const Record_t &rec = get_record(popped);
+
+    if(first == true) {
+      _prev = rec;
+      out.out[out_ind++] = _prev;
+      first = false;
+    } else {
+
+      if(_prev != get_record(popped)) {
+        _prev = get_record(popped);
+        out.out[out_ind++] = _prev;
+      } else {
+        duplicateCount++;
+      }
+    }
+    
 
     ++popped.record_id;
 
@@ -124,12 +141,17 @@ void inmem_merge(RecordArr_t const &records, OutBuffer out, Device *hd,
     // TODO: check return value
     hd->eappend(reinterpret_cast<char *>(out.out.data()),
                 out_ind * Record_t::bytes);
-  } // if
+  } 
+  if(duplicateCount > 0) {
+    *duplicatesCount = *duplicatesCount + duplicateCount;
+    fill_run(hd, out.out, duplicateCount);
+  }
+  // if
 } // inmem_merge
 
 void inmem_spill_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
                        Index_r &index, RunInfo run_info,
-                       RowCount const n_runs_ssd) {
+                       RowCount const n_runs_ssd, RowCount *duplicatesCount) {
   RowCount const mem_run_size = run_info.run_size;
   RowCount const n_runs = run_info.n_runs + n_runs_ssd;
   RowCount const ssd_run_size = run_info.run_size / 2;
@@ -176,6 +198,9 @@ void inmem_spill_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
   }
 
   std::size_t out_ind = 0;
+  Record_t &_prev = *(new Record_t);
+  bool first = true;
+  RowCount duplicateCount = 0;
 
   while (!ltree.empty()) {
     MergeInd popped = ltree.pop();
@@ -183,8 +208,21 @@ void inmem_spill_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
       ltree.deleteRecordId(popped.run_id);
       continue;
     }
-    out.out[out_ind++] = get_record(popped);
+    const Record_t &rec = get_record(popped);
 
+    if(first == true) {
+      _prev = rec;
+      out.out[out_ind++] = _prev;
+      first = false;
+    } else {
+
+      if(_prev != get_record(popped)) {
+        _prev = get_record(popped);
+        out.out[out_ind++] = _prev;
+      } else {
+        duplicateCount++;
+      }
+    }
     ++popped.record_id;
 
     if (popped.run_id < 2 * n_runs_ssd &&
@@ -218,11 +256,15 @@ void inmem_spill_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
     // TODO: check return value
     dev.hd_out->eappend(reinterpret_cast<char *>(out.out.data()),
                         out_ind * Record_t::bytes);
+  }
+  if(duplicateCount > 0) {
+    *duplicatesCount = *duplicatesCount + duplicateCount;
+    fill_run(dev.hd_out, out.out, duplicateCount);
   } // if
 } // inmem_spill_merge
 
 void external_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
-                    Index_r &index, ExRunInfo run_info) {
+                    Index_r &index, ExRunInfo run_info, RowCount *duplicatesCount) {
   RowCount const run_size = run_info.run_size;
   RowCount const n_runs = run_info.n_runs;
 
@@ -260,16 +302,30 @@ void external_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
   }
 
   std::size_t out_ind = 0;
-
+  Record_t &_prev = *(new Record_t);
+  bool first = true;
+  RowCount duplicateCount = 0;
   while (!ltree.empty()) {
     MergeInd popped = ltree.pop();
-    const Record_t &rec = get_record(popped);
-    if (popped.run_id >= n_runs || rec.isfilled()) {
+    
+    if (popped.run_id >= n_runs || get_record(popped).isfilled()) {
       ltree.deleteRecordId(popped.run_id);
       continue;
     }
+    const Record_t &rec = get_record(popped);
+    if(first == true) {
+      _prev = rec;
+      out.out[out_ind++] = _prev;
+      first = false;
+    } else {
 
-    out.out[out_ind++] = rec;
+      if(_prev != rec) {
+        _prev = rec;
+        out.out[out_ind++] = _prev;
+      } else {
+        duplicateCount++;
+      }
+    }
 
     ++popped.record_id;
     if (popped.record_id % run_size == 0) {
@@ -299,12 +355,16 @@ void external_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
     // TODO: check return value
     dev.hd_out->eappend(reinterpret_cast<char *>(out.out.data()),
                         out_ind * Record_t::bytes);
+  }
+  if(duplicateCount > 0) {
+    *duplicatesCount = *duplicatesCount + duplicateCount;
+    fill_run(dev.hd_out, out.out, duplicateCount);
   } // if
 } // external_merge
 
 void external_spill_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
                           Device *dev_exin, Index_r &index, ExRunInfo run_info,
-                          RowCount const n_runs_hdd) {
+                          RowCount const n_runs_hdd, RowCount *duplicatesCount) {
   RowCount const run_size = run_info.run_size;
   RowCount const n_runs = run_info.n_runs + n_runs_hdd;
 
@@ -349,16 +409,31 @@ void external_spill_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
   }
 
   std::size_t out_ind = 0;
-
+  Record_t &_prev = *(new Record_t);
+  bool first = true;
+  RowCount duplicateCount = 0;
   while (!ltree.empty()) {
     MergeInd popped = ltree.pop();
-    const Record_t &rec = get_record(popped);
-    if (popped.run_id >= n_runs || rec.isfilled()) {
+    
+    if (popped.run_id >= n_runs || get_record(popped).isfilled()) {
       ltree.deleteRecordId(popped.run_id);
       continue;
     }
 
-    out.out[out_ind++] = rec;
+    const Record_t &rec = get_record(popped);
+    if(first == true) {
+      _prev = rec;
+      out.out[out_ind++] = _prev;
+      first = false;
+    } else {
+
+      if(_prev != rec) {
+        _prev = rec;
+        out.out[out_ind++] = _prev;
+      } else {
+        duplicateCount++;
+      }
+    }
 
     ++popped.record_id;
     if (popped.record_id % run_size == 0) {
@@ -400,5 +475,9 @@ void external_spill_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
     // TODO: check return value
     dev.hd_out->eappend(reinterpret_cast<char *>(out.out.data()),
                         out_ind * Record_t::bytes);
-  } // if
+  } 
+  if(duplicateCount > 0) {
+    *duplicatesCount = *duplicatesCount + duplicateCount;
+    fill_run(dev.hd_out, out.out, duplicateCount);
+  }// if
 } // external_merge

@@ -14,6 +14,8 @@ public:
     return *(_outputWitnessRecord.get());
   }
   RecordArr_t const &records() const override { return _buffer; }
+  RowCount const &getDuplicatesCount() const override { return duplicatesCount;}
+
 
 private:
   Plan *const _input;
@@ -21,6 +23,7 @@ private:
   Record_t const &_inputWitnessRecord;
 
   RecordArr_t const _buffer;
+  RowCount const &duplicatesCount;
 }; // class ScanPlan
 
 class ValidateIterator : public Iterator {

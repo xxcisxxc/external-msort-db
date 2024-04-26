@@ -12,6 +12,7 @@ public:
   Record_t const &witnessRecord() const override {
     return *(_inputWitnessRecord.get());
   }
+  RowCount const &getDuplicatesCount() const override { return RowCount(0);}
 
 private:
   RowCount const _count;

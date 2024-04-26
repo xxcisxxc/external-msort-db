@@ -7,7 +7,8 @@
 ValidatePlan::ValidatePlan(Plan *const input)
     : _input(input), _outputWitnessRecord(new Record_t),
       _inputWitnessRecord(_input->witnessRecord()),
-      _buffer(_input->records().ptr(), 2) {
+      _buffer(_input->records().ptr(), 2),
+      duplicatesCount(_input->getDuplicatesCount()) {
   TRACE(true);
   _outputWitnessRecord->fill(0);
 } // ValidatePlan::ValidatePlan
@@ -73,6 +74,8 @@ bool ValidateIterator::next() {
                   val_sorted ? "yes" : "no");
     generated = false;
   }
+
+  traceprintf("Duplicates found - %ld :", _plan->duplicatesCount);
 
   _plan->_outputWitnessRecord->fill(0);
 

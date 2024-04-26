@@ -30,18 +30,18 @@ void incache_sort(RecordArr_t const &records, RecordArr_t &out, Index_t &index,
                   RowCount const n_records);
 
 void inmem_merge(RecordArr_t const &records, OutBuffer out, Device *hd,
-                 Index_r &index, RunInfo run_info);
+                 Index_r &index, RunInfo run_info, RowCount *duplicatesCount);
 
 void inmem_spill_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
                        Index_r &index, RunInfo run_info,
-                       RowCount const n_runs_ssd);
+                       RowCount const n_runs_ssd, RowCount *duplicatesCount);
 
 void external_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
-                    Index_r &index, ExRunInfo run_info);
+                    Index_r &index, ExRunInfo run_info, RowCount *duplicatesCount);
 
 void external_spill_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
                           Device *dev_exin, Index_r &index, ExRunInfo run_info,
-                          RowCount const n_runs_hdd);
+                          RowCount const n_runs_hdd, RowCount *duplicatesCount);
 
 inline void fill_run(Device *dev, RecordArr_t &out,
                      std::size_t const fill_records) {
