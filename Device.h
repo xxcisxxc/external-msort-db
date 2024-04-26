@@ -228,3 +228,26 @@ public:
 
   ~ReadDevice() { _file.close(); }
 };
+
+class WriteDevice {
+private:
+  std::fstream _file;
+
+public:
+  WriteDevice(std::string name) {
+    _file.open(name, std::ios::out | std::ios::binary | std::ios::trunc);
+    if (!_file.is_open()) {
+      throw std::runtime_error("Failed to open file");
+    }
+  }
+
+  ::ssize_t append_only(char const *buffer, std::size_t const bytes) {
+    _file.write(buffer, bytes);
+    if (_file.fail() || _file.bad()) {
+      return -1;
+    }
+    return bytes;
+  }
+
+  ~WriteDevice() { _file.close(); }
+};

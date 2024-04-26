@@ -15,7 +15,6 @@ public:
   Iterator *init() const override;
   Record_t const &witnessRecord() const override { return _inputWitnessRecord; }
   RecordArr_t const &records() const override { return _rmem.out; }
-  RowCount const &getDuplicatesCount() const override { return *(duplicatesCount.get());}
 
 private:
   struct CacheRun {
@@ -53,7 +52,7 @@ private:
   std::unique_ptr<Device> hddout;
 
   Record_t const &_inputWitnessRecord;
-  std::unique_ptr<RowCount> duplicatesCount;
+  bool const _dup_remove;
 }; // class SortPlan
 
 class SortIterator : public Iterator {

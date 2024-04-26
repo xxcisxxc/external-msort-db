@@ -1,14 +1,14 @@
 #include "Validate.h"
 #include "Consts.h"
 #include "Device.h"
+#include "Iterator.h"
 #include "Record.h"
 #include "defs.h"
 
 ValidatePlan::ValidatePlan(Plan *const input)
     : _input(input), _outputWitnessRecord(new Record_t),
       _inputWitnessRecord(_input->witnessRecord()),
-      _buffer(_input->records().ptr(), 2),
-      duplicatesCount(_input->getDuplicatesCount()) {
+      _buffer(_input->records().ptr(), 2) {
   TRACE(true);
   _outputWitnessRecord->fill(0);
 } // ValidatePlan::ValidatePlan
@@ -21,7 +21,8 @@ Iterator *ValidatePlan::init() const {
 } // ValidatePlan::init
 
 ValidateIterator::ValidateIterator(ValidatePlan const *const plan)
-    : _count(0), _plan(plan), _input(plan->_input->init()), _out(kOut) {
+    : _count(0), _plan(plan), _input(plan->_input->init()), _out(kOut),
+      _dup_out(kDupOut) {
   TRACE(true);
 } // ValidateIterator::ValidateIterator
 
@@ -50,8 +51,7 @@ bool ValidateIterator::next() {
     }
     Record_t &buffer = const_cast<Record_t &>(_plan->_buffer[ind]);
     while (_out.read_only(buffer, Record_t::bytes) > 0) {
-      // traceprintf("record %lu: %d %d\n", _count, buffer.key[0],
-      // buffer.key[1]);
+      traceprintf("record %lu: %d %d\n", _count, buffer.key[0], buffer.key[1]);
       ++_count;
       _plan->_outputWitnessRecord->x_or(buffer);
       ind ^= 1; // prev and next buffer
@@ -62,6 +62,15 @@ bool ValidateIterator::next() {
         val_sorted = false;
       }
       return generated;
+    }
+    while (_dup_out.read_only(buffer, Record_t::bytes) > 0) {
+      RowCount dup_count = 0;
+      _dup_out.read_only(reinterpret_cast<char *>(&dup_count),
+                         sizeof(dup_count));
+      _count += dup_count;
+      if (dup_count % 2 != 0) {
+        _plan->_outputWitnessRecord->x_or(buffer);
+      }
     }
 
     bool val_witness =
@@ -74,8 +83,6 @@ bool ValidateIterator::next() {
                   val_sorted ? "yes" : "no");
     generated = false;
   }
-
-  traceprintf("Duplicates found - %ld :", _plan->duplicatesCount);
 
   _plan->_outputWitnessRecord->fill(0);
 

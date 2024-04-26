@@ -13,12 +13,11 @@ SortPlan::SortPlan(Plan *const input)
     : _input(input), _rcache(input->records()), _icache(input->records()),
       _rmem(RecordArr_t(std::shared_ptr<Record_t>(
                             reinterpret_cast<Record_t *>(new char[kMemSize])),
-                        kMemSize / Record_t::bytes)),
+                        fmem_nrecords())),
       ssd(std::make_unique<Device>(kSSD, 0.1, 200, 10 * 1024)),
       hdd(std::make_unique<Device>(kHDD, 5, 100, ULONG_MAX)),
       hddout(std::make_unique<Device>(kOut, 5, 100, ULONG_MAX)),
-      _inputWitnessRecord(_input->witnessRecord()),
-      duplicatesCount(std::make_unique<RowCount>(0)) {
+      _inputWitnessRecord(_input->witnessRecord()), _dup_remove(false) {
   TRACE(true);
 } // SortPlan::SortPlan
 
@@ -78,7 +77,8 @@ bool SortIterator::next() {
       // memory is not full, merge all cache-sized runs in memory to out
       inmem_merge(
           in, {_kRowMemOut, out}, hddout, indexr,
-          {_kRowCacheRun, (_consumed + _kRowCacheRun - 1) / _kRowCacheRun}, _plan->duplicatesCount.get());
+          {_kRowCacheRun, (_consumed + _kRowCacheRun - 1) / _kRowCacheRun},
+          _plan->_dup_remove);
       finished = true;
       return false;
     }
@@ -87,7 +87,8 @@ bool SortIterator::next() {
       inmem_spill_merge(in, {_kRowMemOut, out}, {ssd, hddout}, indexr,
                         {_kRowCacheRun, _kRunMem},
                         (_consumed - _kRowMemRun + _kRowCacheRun - 1) /
-                            _kRowCacheRun,  _plan->duplicatesCount.get());
+                            _kRowCacheRun,
+                        _plan->_dup_remove);
       finished = true;
       return false;
     }
@@ -102,7 +103,8 @@ bool SortIterator::next() {
       // merge remaining runs in memory to ssd (create the last run in ssd)
       inmem_merge(
           in, {_kRowMemOut, out}, out_dev, indexr,
-          {_kRowCacheRun, (inmem_rem + _kRowCacheRun - 1) / _kRowCacheRun},  _plan->duplicatesCount.get());
+          {_kRowCacheRun, (inmem_rem + _kRowCacheRun - 1) / _kRowCacheRun},
+          _plan->_dup_remove);
       // fill the last run in ssd
       fill_run(out_dev, out, _kRowMemRun - inmem_rem);
     }
@@ -112,7 +114,7 @@ bool SortIterator::next() {
       uint32_t n_runs = (_consumed + _kRowMemRun - 1) / _kRowMemRun;
       uint32_t run_size = _kRowMergeRun / n_runs;
       external_merge(in, {_kRowMemOut, out}, {ssd, hddout}, indexr,
-                     {{run_size, n_runs}, _kRowMemRun},  _plan->duplicatesCount.get());
+                     {{run_size, n_runs}, _kRowMemRun}, _plan->_dup_remove);
       finished = true;
       return false;
     }
@@ -123,7 +125,8 @@ bool SortIterator::next() {
           (_consumed - _kRowSSDRun + _kRowMemRun - 1) / _kRowMemRun;
       uint32_t run_size = _kRowMergeRun / (_kRunSSD + n_runs_hdd);
       external_spill_merge(in, {_kRowMemOut, out}, {ssd, hddout}, hdd, indexr,
-                           {{run_size, _kRunSSD}, _kRowMemRun}, n_runs_hdd,  _plan->duplicatesCount.get());
+                           {{run_size, _kRunSSD}, _kRowMemRun}, n_runs_hdd,
+                           _plan->_dup_remove);
       finished = true;
       return false;
     }
@@ -134,7 +137,7 @@ bool SortIterator::next() {
       uint32_t n_runs = (ssd_rem + _kRowMemRun - 1) / _kRowMemRun;
       uint32_t run_size = _kRowMergeRun / n_runs;
       external_merge(in, {_kRowMemOut, out}, {ssd, hdd}, indexr,
-                     {{run_size, n_runs}, _kRowMemRun},  _plan->duplicatesCount.get());
+                     {{run_size, n_runs}, _kRowMemRun}, _plan->_dup_remove);
       // fill the last run in hdd
       fill_run(hdd, out, _kRowMemRun - ssd_rem);
     }
@@ -153,7 +156,8 @@ bool SortIterator::next() {
         external_merge(
             in, {_kRowMemOut, out}, {hdd, hdd}, indexr,
             {{run_size, (i + n_subruns > n_runs) ? n_runs - i : n_subruns},
-             exrun_size}, _plan->duplicatesCount.get());
+             exrun_size},
+            _plan->_dup_remove);
         if (i + n_subruns > n_runs) {
           uint32_t rem_size = (i + n_subruns - n_runs) * exrun_size;
           fill_run(hdd, out, rem_size);
@@ -172,7 +176,7 @@ bool SortIterator::next() {
       n_subruns = _kRowMergeRun / run_size;
     }
     external_merge(in, {_kRowMemOut, out}, {hdd, hddout}, indexr,
-                   {{run_size, n_runs}, exrun_size},  _plan->duplicatesCount.get());
+                   {{run_size, n_runs}, exrun_size}, _plan->_dup_remove);
     finished = true;
     return false;
   } // if produced >= consumed
@@ -209,7 +213,7 @@ bool SortIterator::next() {
       // out_dev=ssd: merge all cache-sized runs in memory to ssd
       // out_dev=hdd: spill from ssd to hdd
       inmem_merge(in, {_kRowMemOut, out}, out_dev, indexr,
-                  {_kRowCacheRun, _kRunMem},  _plan->duplicatesCount.get());
+                  {_kRowCacheRun, _kRunMem}, _plan->_dup_remove);
     }
     if (_consumed == 2 * _kRowMemRun) {
       // merge the first block of unmerged runs in ssd due to spilling
@@ -218,7 +222,7 @@ bool SortIterator::next() {
       uint64_t cur_pos = ssd->get_pos();
       ssd->clear();
       inmem_merge(in, {_kRowMemOut, out}, ssd, indexr,
-                  {_kRowCacheRun, _kRunMem},  _plan->duplicatesCount.get());
+                  {_kRowCacheRun, _kRunMem}, _plan->_dup_remove);
       ssd->eseek(cur_pos);
     }
   } // if
@@ -230,13 +234,13 @@ bool SortIterator::next() {
     if (_consumed >= 2 * _kRowSSDRun) {
       // merge all ssd runs to hdd
       external_merge(in, {_kRowMemOut, out}, {ssd, hdd}, indexr,
-                     {{run_size, _kRunSSD}, _kRowMemRun},  _plan->duplicatesCount.get());
+                     {{run_size, _kRunSSD}, _kRowMemRun}, _plan->_dup_remove);
       ssd->clear();
     }
     if (_consumed == 2 * _kRowSSDRun) {
       // merge all spilled ssd runs to hdd (first to ssd then bulk write to hdd)
       external_merge(in, {_kRowMemOut, out}, {hdd, ssd}, indexr,
-                     {{run_size, _kRunSSD}, _kRowMemRun},  _plan->duplicatesCount.get());
+                     {{run_size, _kRunSSD}, _kRowMemRun}, _plan->_dup_remove);
       RecordArr_t whole = _plan->_rmem.whole();
       for (uint32_t i = 0; i < _kRunSSD; ++i) {
         ssd->eread(reinterpret_cast<char *>(whole.data()),
