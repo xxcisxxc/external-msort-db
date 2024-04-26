@@ -17,7 +17,7 @@ SortPlan::SortPlan(Plan *const input)
       ssd(std::make_unique<Device>(kSSD, 0.1, 200, 10 * 1024)),
       hdd(std::make_unique<Device>(kHDD, 5, 100, ULONG_MAX)),
       hddout(std::make_unique<Device>(kOut, 5, 100, ULONG_MAX)),
-      _inputWitnessRecord(_input->witnessRecord()), _dup_remove(true) {
+      _inputWitnessRecord(_input->witnessRecord()), _dup_remove(isDistinct()) {
   TRACE(true);
 } // SortPlan::SortPlan
 
@@ -101,12 +101,14 @@ bool SortIterator::next() {
           (_kRowSSDRun < _consumed && _consumed <= 2 * _kRowSSDRun) ? hdd : ssd;
 
       // merge remaining runs in memory to ssd (create the last run in ssd)
-      inmem_merge(
-          in, {_kRowMemOut, out}, out_dev, indexr,
-          {_kRowCacheRun, (inmem_rem + _kRowCacheRun - 1) / _kRowCacheRun},
-          _plan->_dup_remove);
+      RowCount n_runs = (inmem_rem + _kRowCacheRun - 1) / _kRowCacheRun;
+      inmem_merge(in, {_kRowMemOut, out}, out_dev, indexr,
+                  {_kRowCacheRun, n_runs}, _plan->_dup_remove);
       // fill the last run in ssd
-      fill_run(out_dev, out, _kRowMemRun - inmem_rem);
+      inmem_rem = _kRowMemRun - _kRowCacheRun * n_runs;
+      if (inmem_rem != 0) {
+        fill_run(out_dev, out, inmem_rem);
+      }
     }
 
     if (_consumed <= _kRowSSDRun) {
@@ -139,7 +141,8 @@ bool SortIterator::next() {
       external_merge(in, {_kRowMemOut, out}, {ssd, hdd}, indexr,
                      {{run_size, n_runs}, _kRowMemRun}, _plan->_dup_remove);
       // fill the last run in hdd
-      fill_run(hdd, out, _kRowSSDRun - ssd_rem);
+      ssd_rem = _kRowSSDRun - _kRowMemRun * n_runs;
+      fill_run(hdd, out, ssd_rem);
     }
 
     // merge all the remaining hdd runs to hddout (nested)
@@ -152,7 +155,6 @@ bool SortIterator::next() {
     }
     n_subruns = _kRowMergeRun / run_size;
     while (n_subruns < n_runs) {
-      printf("No Way!\n");
       for (uint32_t i = 0; i < n_runs; i += n_subruns) {
         external_merge(
             in, {_kRowMemOut, out}, {hdd, hdd}, indexr,

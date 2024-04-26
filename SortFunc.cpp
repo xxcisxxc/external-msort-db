@@ -1,5 +1,6 @@
 #include "SortFunc.h"
 #include "Consts.h"
+#include "Iterator.h"
 #include "LoserTree.h"
 #include "Record.h"
 #include <algorithm>
@@ -106,7 +107,7 @@ void inmem_merge(RecordArr_t const &records, OutBuffer out, Device *hd,
   }
 
   std::size_t out_ind = 0;
-  RowCount duplicateCount = 0;
+  RowCount total = 0;
   RowCount dupRecordCount = 0;
 
   while (!ltree.empty()) {
@@ -127,12 +128,13 @@ void inmem_merge(RecordArr_t const &records, OutBuffer out, Device *hd,
         }
         *_prev_record = rec;
         out.out[out_ind++] = rec;
+        ++total;
       } else {
-        ++duplicateCount;
         ++dupRecordCount;
       }
     } else {
       out.out[out_ind++] = rec;
+      ++total;
     }
 
     ++popped.record_id;
@@ -155,8 +157,10 @@ void inmem_merge(RecordArr_t const &records, OutBuffer out, Device *hd,
     hd->eappend(reinterpret_cast<char *>(out.out.data()),
                 out_ind * Record_t::bytes);
   }
-  if (duplicateCount > 0) {
-    fill_run(hd, out.out, duplicateCount);
+
+  RowCount merge_size = n_runs * run_size;
+  if (total < merge_size) {
+    fill_run(hd, out.out, merge_size - total);
   }
   // if
 } // inmem_merge
@@ -218,7 +222,6 @@ void inmem_spill_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
   }
 
   std::size_t out_ind = 0;
-  RowCount duplicateCount = 0;
   RowCount dupRecordCount = 0;
 
   while (!ltree.empty()) {
@@ -231,7 +234,7 @@ void inmem_spill_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
 
     if (dup_remove) {
       if (*_prev_record != rec) {
-        if (dup_remove && dupRecordCount > 0) {
+        if (dupRecordCount > 0) {
           dup_out.append_only(*_prev_record, Record_t::bytes);
           dup_out.append_only(reinterpret_cast<char *>(&dupRecordCount),
                               sizeof(dupRecordCount));
@@ -240,7 +243,7 @@ void inmem_spill_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
         *_prev_record = rec;
         out.out[out_ind++] = *_prev_record;
       } else {
-        ++duplicateCount;
+        ++dupRecordCount;
       }
     } else {
       out.out[out_ind++] = rec;
@@ -279,9 +282,6 @@ void inmem_spill_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
     dev.hd_out->eappend(reinterpret_cast<char *>(out.out.data()),
                         out_ind * Record_t::bytes);
   }
-  if (duplicateCount > 0) {
-    fill_run(dev.hd_out, out.out, duplicateCount);
-  } // if
 } // inmem_spill_merge
 
 void external_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
@@ -331,7 +331,7 @@ void external_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
   }
 
   std::size_t out_ind = 0;
-  RowCount duplicateCount = 0;
+  RowCount total = 0;
   RowCount dupRecordCount = 0;
 
   while (!ltree.empty()) {
@@ -345,7 +345,7 @@ void external_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
 
     if (dup_remove) {
       if (*_prev_record != rec) {
-        if (dup_remove && dupRecordCount > 0) {
+        if (dupRecordCount > 0) {
           dup_out.append_only(*_prev_record, Record_t::bytes);
           dup_out.append_only(reinterpret_cast<char *>(&dupRecordCount),
                               sizeof(dupRecordCount));
@@ -353,11 +353,13 @@ void external_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
         }
         *_prev_record = rec;
         out.out[out_ind++] = rec;
+        ++total;
       } else {
-        ++duplicateCount;
+        ++dupRecordCount;
       }
     } else {
       out.out[out_ind++] = rec;
+      ++total;
     }
 
     ++popped.record_id;
@@ -389,9 +391,11 @@ void external_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
     dev.hd_out->eappend(reinterpret_cast<char *>(out.out.data()),
                         out_ind * Record_t::bytes);
   }
-  if (duplicateCount > 0) {
-    fill_run(dev.hd_out, out.out, duplicateCount);
-  } // if
+
+  RowCount merge_size = n_runs * run_info.exrun_size;
+  if (total < merge_size) {
+    fill_run(dev.hd_out, out.out, merge_size - total);
+  }
 } // external_merge
 
 void external_spill_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
@@ -463,7 +467,7 @@ void external_spill_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
 
     if (dup_remove) {
       if (*_prev_record != rec) {
-        if (dup_remove && dupRecordCount > 0) {
+        if (dupRecordCount > 0) {
           dup_out.append_only(*_prev_record, Record_t::bytes);
           dup_out.append_only(reinterpret_cast<char *>(&dupRecordCount),
                               sizeof(dupRecordCount));
@@ -473,6 +477,7 @@ void external_spill_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
         out.out[out_ind++] = rec;
       } else {
         ++duplicateCount;
+        ++dupRecordCount;
       }
     } else {
       out.out[out_ind++] = rec;

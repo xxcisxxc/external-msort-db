@@ -3,6 +3,7 @@
 #include "Consts.h"
 #include "Record.h"
 #include <cstddef>
+#include <cstdlib>
 
 static inline std::size_t cache_nruns() { return 1; } // cache_nruns
 
@@ -62,3 +63,12 @@ static inline std::size_t minm_nrecords() {
   constexpr std::size_t min_size = 100 * 5 * 1024 * 1024 / 1000;
   return min_size / Record_t::bytes;
 } // minm_nrecords
+
+inline bool isDistinct() {
+  const char *distinct = std::getenv("DISTINCT");
+  if (distinct == nullptr) {
+    return false;
+  }
+  int val = std::atoi(distinct);
+  return val > 0;
+}

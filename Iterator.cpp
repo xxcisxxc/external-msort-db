@@ -1,4 +1,5 @@
 #include "Iterator.h"
+#include "Utils.h"
 #include "defs.h"
 
 Plan::Plan() { TRACE(true); } // Plan::Plan
@@ -15,5 +16,6 @@ void Iterator::run() {
   while (next())
     ++_count;
 
-  traceprintf("entire plan produced %lu rows\n", (unsigned long)_count);
+  traceprintf("entire plan produced SORTED %lu%s rows\n", (unsigned long)_count,
+              (isDistinct() ? " UNIQUE" : ""));
 } // Iterator::run

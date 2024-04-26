@@ -51,14 +51,16 @@ bool ValidateIterator::next() {
     }
     Record_t &buffer = const_cast<Record_t &>(_plan->_buffer[ind]);
     while (_out.read_only(buffer, Record_t::bytes) > 0 && !buffer.isfilled()) {
-      traceprintf("record %lu: %d %d\n", _count, buffer.key[0], buffer.key[1]);
+      // traceprintf("record %lu: %d %d\n", _count, buffer.key[0],
+      // buffer.key[1]);
       ++_count;
       _plan->_outputWitnessRecord->x_or(buffer);
       ind ^= 1; // prev and next buffer
       if (buffer < _plan->_buffer[ind]) {
-        traceprintf("record not sorted %ld: prev: %d %d, cur: %d %d\n",
-                    _count - 1, _plan->_buffer[ind].key[0],
-                    _plan->_buffer[ind].key[1], buffer.key[0], buffer.key[1]);
+        // traceprintf("record not sorted %ld: prev: %d %d, cur: %d %d\n",
+        //             _count - 1, _plan->_buffer[ind].key[0],
+        //             _plan->_buffer[ind].key[1], buffer.key[0],
+        //             buffer.key[1]);
         val_sorted = false;
       }
       return generated;
@@ -67,8 +69,8 @@ bool ValidateIterator::next() {
       RowCount dup_count = 0;
       _dup_out.read_only(reinterpret_cast<char *>(&dup_count),
                          sizeof(dup_count));
-      traceprintf("dup record %lu: %d %d\n", dup_count, buffer.key[0],
-                  buffer.key[1]);
+      // traceprintf("dup record %lu: %d %d\n", dup_count, buffer.key[0],
+      //             buffer.key[1]);
       _count += dup_count;
       if (dup_count % 2 != 0) {
         _plan->_outputWitnessRecord->x_or(buffer);
@@ -78,11 +80,8 @@ bool ValidateIterator::next() {
     bool val_witness =
         (*(_plan->_outputWitnessRecord.get()) == _plan->_inputWitnessRecord);
 
-    if (val_witness && val_sorted)
-      traceprintf("Witness: yes, Sorted: yes\n");
-    else
-      traceprintf("Witness: %s, Sorted %s\n", val_witness ? "yes" : "no",
-                  val_sorted ? "yes" : "no");
+    traceprintf("Witness: %s, Sorted %s\n", yesno(val_witness),
+                yesno(val_sorted));
     generated = false;
   }
 
