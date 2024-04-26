@@ -37,10 +37,10 @@ ScanIterator::~ScanIterator() {
 void random_generate(Record_t &record) {
   static RowCount count = 0;
   ++count;
-  // if (count % 7 == 0) {
-  //   record.fill(12);
-  //   return;
-  // }
+  if (count % 3 == 0) {
+    record.fill(12);
+    return;
+  }
   for (std::size_t i = 0; i < record.bytes; ++i)
     reinterpret_cast<char *>(record.key)[i] =
         std::rand() % (CHAR_MAX - CHAR_MIN + 1);

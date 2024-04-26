@@ -50,7 +50,7 @@ bool ValidateIterator::next() {
       const_cast<Record_t &>(_plan->_buffer[1]).fill(Record_t::min());
     }
     Record_t &buffer = const_cast<Record_t &>(_plan->_buffer[ind]);
-    while (_out.read_only(buffer, Record_t::bytes) > 0) {
+    while (_out.read_only(buffer, Record_t::bytes) > 0 && !buffer.isfilled()) {
       traceprintf("record %lu: %d %d\n", _count, buffer.key[0], buffer.key[1]);
       ++_count;
       _plan->_outputWitnessRecord->x_or(buffer);
@@ -67,6 +67,8 @@ bool ValidateIterator::next() {
       RowCount dup_count = 0;
       _dup_out.read_only(reinterpret_cast<char *>(&dup_count),
                          sizeof(dup_count));
+      traceprintf("dup record %lu: %d %d\n", dup_count, buffer.key[0],
+                  buffer.key[1]);
       _count += dup_count;
       if (dup_count % 2 != 0) {
         _plan->_outputWitnessRecord->x_or(buffer);

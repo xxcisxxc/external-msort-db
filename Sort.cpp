@@ -17,7 +17,7 @@ SortPlan::SortPlan(Plan *const input)
       ssd(std::make_unique<Device>(kSSD, 0.1, 200, 10 * 1024)),
       hdd(std::make_unique<Device>(kHDD, 5, 100, ULONG_MAX)),
       hddout(std::make_unique<Device>(kOut, 5, 100, ULONG_MAX)),
-      _inputWitnessRecord(_input->witnessRecord()), _dup_remove(false) {
+      _inputWitnessRecord(_input->witnessRecord()), _dup_remove(true) {
   TRACE(true);
 } // SortPlan::SortPlan
 
@@ -139,7 +139,7 @@ bool SortIterator::next() {
       external_merge(in, {_kRowMemOut, out}, {ssd, hdd}, indexr,
                      {{run_size, n_runs}, _kRowMemRun}, _plan->_dup_remove);
       // fill the last run in hdd
-      fill_run(hdd, out, _kRowMemRun - ssd_rem);
+      fill_run(hdd, out, _kRowSSDRun - ssd_rem);
     }
 
     // merge all the remaining hdd runs to hddout (nested)
@@ -152,6 +152,7 @@ bool SortIterator::next() {
     }
     n_subruns = _kRowMergeRun / run_size;
     while (n_subruns < n_runs) {
+      printf("No Way!\n");
       for (uint32_t i = 0; i < n_runs; i += n_subruns) {
         external_merge(
             in, {_kRowMemOut, out}, {hdd, hdd}, indexr,

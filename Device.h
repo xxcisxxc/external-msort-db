@@ -246,6 +246,7 @@ public:
     if (_file.fail() || _file.bad()) {
       return -1;
     }
+    _file.flush();
     return bytes;
   }
 
