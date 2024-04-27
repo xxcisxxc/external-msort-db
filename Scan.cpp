@@ -135,7 +135,6 @@ bool ScanIterator::next() {
 
   if (_count >= _plan->_count) {
     if (_count % _kRowCache != 0 && !_final) {
-      traceprintf("Write %lu records\n", (unsigned long)(_count % _kRowCache));
       input.append_only(reinterpret_cast<char *>(records.data()),
                         (_count % _kRowCache) * Record_t::bytes);
       _final = true;
