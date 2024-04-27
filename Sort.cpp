@@ -78,7 +78,7 @@ bool SortIterator::next() {
       inmem_merge(
           in, {_kRowMemOut, out}, hddout, indexr,
           {_kRowCacheRun, (_consumed + _kRowCacheRun - 1) / _kRowCacheRun},
-          _plan->_dup_remove);
+          _plan->_dup_remove, true);
       finished = true;
       return false;
     }
@@ -116,7 +116,8 @@ bool SortIterator::next() {
       uint32_t n_runs = (_consumed + _kRowMemRun - 1) / _kRowMemRun;
       uint32_t run_size = _kRowMergeRun / n_runs;
       external_merge(in, {_kRowMemOut, out}, {ssd, hddout}, indexr,
-                     {{run_size, n_runs}, _kRowMemRun}, _plan->_dup_remove);
+                     {{run_size, n_runs}, _kRowMemRun}, _plan->_dup_remove,
+                     true);
       finished = true;
       return false;
     }
@@ -179,7 +180,7 @@ bool SortIterator::next() {
       n_subruns = _kRowMergeRun / run_size;
     }
     external_merge(in, {_kRowMemOut, out}, {hdd, hddout}, indexr,
-                   {{run_size, n_runs}, exrun_size}, _plan->_dup_remove);
+                   {{run_size, n_runs}, exrun_size}, _plan->_dup_remove, true);
     finished = true;
     return false;
   } // if produced >= consumed

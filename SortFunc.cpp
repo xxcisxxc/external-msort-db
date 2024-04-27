@@ -71,7 +71,8 @@ void incache_sort(RecordArr_t const &records, RecordArr_t &out, Index_t &index,
 static WriteDevice dup_out(kDupOut); // record + uin64_t count
 
 void inmem_merge(RecordArr_t const &records, OutBuffer out, Device *hd,
-                 Index_r &index, RunInfo run_info, bool dup_remove) {
+                 Index_r &index, RunInfo run_info, bool dup_remove,
+                 bool no_fill) {
   spdlog::info("STATE -> MERGE_RUNS_{0}: Merge sorted runs on the {0} device",
                hd->name);
   static Record_t *_prev_record = nullptr;
@@ -157,6 +158,13 @@ void inmem_merge(RecordArr_t const &records, OutBuffer out, Device *hd,
     } // if
   }
 
+  if (dupRecordCount > 0) {
+    dup_out.append_only(*_prev_record, Record_t::bytes);
+    dup_out.append_only(reinterpret_cast<char *>(&dupRecordCount),
+                        sizeof(dupRecordCount));
+    dupRecordCount = 0;
+  }
+
   if (out_ind > 0) {
     // TODO: check return value
     hd->eappend(reinterpret_cast<char *>(out.out.data()),
@@ -164,7 +172,7 @@ void inmem_merge(RecordArr_t const &records, OutBuffer out, Device *hd,
   }
 
   RowCount merge_size = n_runs * run_size;
-  if (total < merge_size) {
+  if (total < merge_size && !no_fill) {
     fill_run(hd, out.out, merge_size - total);
   }
   // if
@@ -285,6 +293,13 @@ void inmem_spill_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
     } // if
   }
 
+  if (dupRecordCount > 0) {
+    dup_out.append_only(*_prev_record, Record_t::bytes);
+    dup_out.append_only(reinterpret_cast<char *>(&dupRecordCount),
+                        sizeof(dupRecordCount));
+    dupRecordCount = 0;
+  }
+
   if (out_ind > 0) {
     // TODO: check return value
     dev.hd_out->eappend(reinterpret_cast<char *>(out.out.data()),
@@ -293,7 +308,8 @@ void inmem_spill_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
 } // inmem_spill_merge
 
 void external_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
-                    Index_r &index, ExRunInfo run_info, bool dup_remove) {
+                    Index_r &index, ExRunInfo run_info, bool dup_remove,
+                    bool no_fill) {
   spdlog::info("STATE -> MERGE_RUNS_{0}: Merge sorted runs on the {0} device",
                dev.hd_out->name);
   static Record_t *_prev_record = nullptr;
@@ -395,7 +411,15 @@ void external_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
                           out.out_size * Record_t::bytes);
       out_ind = 0;
     } // if
-  }   // while
+  }
+
+  if (dupRecordCount > 0) {
+    dup_out.append_only(*_prev_record, Record_t::bytes);
+    dup_out.append_only(reinterpret_cast<char *>(&dupRecordCount),
+                        sizeof(dupRecordCount));
+    dupRecordCount = 0;
+  }
+
   if (out_ind > 0) {
     // TODO: check return value
     dev.hd_out->eappend(reinterpret_cast<char *>(out.out.data()),
@@ -403,7 +427,7 @@ void external_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
   }
 
   RowCount merge_size = n_runs * run_info.exrun_size;
-  if (total < merge_size) {
+  if (total < merge_size && !no_fill) {
     fill_run(dev.hd_out, out.out, merge_size - total);
   }
 } // external_merge
@@ -466,7 +490,6 @@ void external_spill_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
   }
 
   std::size_t out_ind = 0;
-  RowCount duplicateCount = 0;
   RowCount dupRecordCount = 0;
 
   while (!ltree.empty()) {
@@ -489,7 +512,6 @@ void external_spill_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
         *_prev_record = rec;
         out.out[out_ind++] = rec;
       } else {
-        ++duplicateCount;
         ++dupRecordCount;
       }
     } else {
@@ -532,12 +554,17 @@ void external_spill_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
       out_ind = 0;
     } // if
   }
+
+  if (dupRecordCount > 0) {
+    dup_out.append_only(*_prev_record, Record_t::bytes);
+    dup_out.append_only(reinterpret_cast<char *>(&dupRecordCount),
+                        sizeof(dupRecordCount));
+    dupRecordCount = 0;
+  }
+
   if (out_ind > 0) {
     // TODO: check return value
     dev.hd_out->eappend(reinterpret_cast<char *>(out.out.data()),
                         out_ind * Record_t::bytes);
   }
-  if (duplicateCount > 0) {
-    fill_run(dev.hd_out, out.out, duplicateCount);
-  } // if
 } // external_spill_merge

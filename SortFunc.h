@@ -30,14 +30,16 @@ void incache_sort(RecordArr_t const &records, RecordArr_t &out, Index_t &index,
                   RowCount const n_records);
 
 void inmem_merge(RecordArr_t const &records, OutBuffer out, Device *hd,
-                 Index_r &index, RunInfo run_info, bool dup_remove);
+                 Index_r &index, RunInfo run_info, bool dup_remove,
+                 bool no_fill = false);
 
 void inmem_spill_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
                        Index_r &index, RunInfo run_info,
                        RowCount const n_runs_ssd, bool dup_remove);
 
 void external_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
-                    Index_r &index, ExRunInfo run_info, bool dup_remove);
+                    Index_r &index, ExRunInfo run_info, bool dup_remove,
+                    bool no_fill = false);
 
 void external_spill_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
                           Device *dev_exin, Index_r &index, ExRunInfo run_info,
