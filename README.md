@@ -5,11 +5,42 @@
 ### Testbed
 
 1. CPU Platform
-   - Tested on `AMD EPYC 7763 64-Core Processor`, `Intel(R) Core(TM) i5-10600T CPU @ 2.40GHz` and `
+   - Tested on `AMD EPYC 7763 64-Core Processor`, `Intel(R) Core(TM) i5-10600T CPU @ 2.40GHz` and `Intel(R) Xeon(R) CPU @ 2.30GHz`
 2. System
-   - Tested on `Ubuntu 22.04.4 LTS`, `Ubuntu 20.04.6 LTS`, `Debian 12`
+   - Tested on `Ubuntu 22.04.4 LTS`, `Ubuntu 20.04.6 LTS`, `Debian GNU/Linux 12 (bookworm)`
 3. Compiler
    - Tested on `gcc-9`, `gcc-11`, `gcc-12`
+
+### Use Docker
+
+1. Build Docker Image (*Inside the proejct directory*)
+
+```bash
+docker build -t exmsort-project .
+```
+
+2. Running Application
+
+```bash
+docker run -it --rm --name running-exsort -v .:/usr/src/exmsort exmsort-project -c n_records -s record_size -o trace_file
+```
+
+3. Open Input, Output, Duplicate Data and Trace File
+
+   Files could be directly accessed inside project directory after running the above command.
+
+```bash
+cat randin # input data
+cat hddout # output data
+cat dupout # duplicate data
+cat trace_file # trace file
+```
+
+4. (*Optional*) If you want to run application directly inside docker
+
+```bash
+docker run -it --rm --name running-exsort --entrypoint /bin/bash exmsort-project
+```
   
 ### Compilation
 
