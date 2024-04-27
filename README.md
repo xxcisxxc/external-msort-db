@@ -27,7 +27,7 @@ docker run -it --rm --name running-exsort -v .:/usr/src/exmsort exmsort-project 
 
 3. Open Input, Output, Duplicate Data and Trace File
 
-   Files could be directly accessed inside project directory after running the above command.
+Files could be directly accessed inside project directory after running the above command.
 
 ```bash
 cat randin # input data
@@ -41,6 +41,8 @@ cat trace_file # trace file
 ```bash
 docker run -it --rm --name running-exsort --entrypoint /bin/bash exmsort-project
 ```
+
+Then compile & run with the following commands.
   
 ### Compilation
 
