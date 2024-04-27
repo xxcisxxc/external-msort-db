@@ -1,5 +1,9 @@
 # External Merge Sort
 
+## Code Compilation & Running
+
+(For Xincheng)
+
 ## Code Structure
 
 (For Ranjitha)
