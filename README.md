@@ -1,3 +1,19 @@
 # External Merge Sort
 
-TODO
+## Code Structure
+
+(For Ranjitha)
+
+## Contribution
+
+### Xincheng
+
+1. sort
+2. ...
+
+### Ranjitha
+
+...
+
+
+## Expected Time
