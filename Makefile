@@ -56,19 +56,5 @@ $(TEST_OBJS) : catch2/catch_amalgamated.hpp $(HDRS) $(TEST_SRCS)
 $(TEST_LIBS) : catch2/catch_amalgamated.hpp
 
 clean :
-	@rm -f $(OBJS) ExternalSort.exe ExternalSort.exe.stackdump trace
+	@rm -f $(OBJS) ExternalSort.exe ExternalSort.exe.stackdump trace* SSD HDD dupout hddout randin
 	@rm -f $(TEST_OBJS) $(TEST_DIR)/test_record $(TEST_LIBS)
-
-# generate compile_commands.json for clangd
-# compile_commands.json : Makefile $(SRCS) $(HDRS)
-# 	@echo -n > compile_commands.json
-# 	@echo "[" >> compile_commands.json
-# 	@for file in $(SRCS) ; do \
-# 		if [ $$file = `echo $(SRCS) | awk '{print $$NF}'` ] ; then \
-# 			echo -n "  { \"directory\": \"`pwd`\", \"command\": \"$(CPP) $(CPPFLAGS) -c $$file\", \"file\": \"$$file\" }" >> compile_commands.json ; \
-# 		else \
-# 			echo -n "  { \"directory\": \"`pwd`\", \"command\": \"$(CPP) $(CPPFLAGS) -c $$file\", \"file\": \"$$file\" }," >> compile_commands.json ; \
-# 		fi ; \
-# 		echo >> compile_commands.json ; \
-# 	done
-# 	@echo "]" >> compile_commands.json
