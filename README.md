@@ -13,7 +13,7 @@
 
 ### Use Docker
 
-1. Build Docker Image (*Inside the project directory*)
+1. Build Docker Image (_Inside the project directory_)
 
 ```bash
 docker build -t exmsort-project .
@@ -25,7 +25,7 @@ docker build -t exmsort-project .
 docker run -it --rm --name running-exsort -v .:/usr/src/exmsort -e DISTINCT=1 exmsort-project -c n_records -s record_size -o trace_file
 ```
 
-`DISTINCT=0` is *no* Duplicate Elimination and `DISTINCT=1` is Duplicate Elimination.
+`DISTINCT=0` is _no_ Duplicate Elimination and `DISTINCT=1` is Duplicate Elimination.
 
 3. Open Input, Output, Duplicate Data and Trace File
 
@@ -38,7 +38,7 @@ cat dupout # duplicate data
 cat trace_file # trace file
 ```
 
-4. (*Optional*) If you want to run application directly inside docker
+4. (_Optional_) If you want to run application directly inside docker
 
 ```bash
 docker run -it --rm --name running-exsort --entrypoint /bin/bash exmsort-project
@@ -54,13 +54,13 @@ make -j
 
 ### Running
 
-**With** *Duplicate Elimination*
+**With** _Duplicate Elimination_
 
 ```bash
 DISTINCT=1 ./ExternalSort.exe -c n_records -s record_size -o trace_file
 ```
 
-**Without** *Duplicate Elimination*
+**Without** _Duplicate Elimination_
 
 ```bash
 DISTINCT=0 ./ExternalSort.exe -c n_records -s record_size -o trace_file
@@ -68,9 +68,9 @@ DISTINCT=0 ./ExternalSort.exe -c n_records -s record_size -o trace_file
 
 ### Interpret Output Files
 
-1. `randin`: Input Random Data. *No Separator* between records.
-2. `hddout`: Output Unsorted Data. *No Separator* between records.
-3. `dupout`: Duplication Data with Count. For one entry, the first `record_size` bytes data is the duplicate record, the following `sizeof(uint64)t` integer is the count. *No Separator* between entries.
+1. `randin`: Input Random Data. _No Separator_ between records.
+2. `hddout`: Output Unsorted Data. _No Separator_ between records.
+3. `dupout`: Duplication Data with Count. For one entry, the first `record_size` bytes data is the duplicate record, the following `sizeof(uint64)t` integer is the count. _No Separator_ between entries.
 
 ## Code Structure
 
@@ -103,72 +103,76 @@ else: # input >= 2 * ssd_size
 
 1. `class Record` implementation and Device Emulation
 2. Sort Algorithm Implementation
-  - In Cache Sort
-  - In Memory Merge Sort
-  - External Merge Sort
-  - Nested Merge Sort in the Final Merge Step
+
+- In Cache Sort
+- In Memory Merge Sort
+- External Merge Sort
+- Nested Merge Sort in the Final Merge Step
 
 ### Ranjitha
 
 ...
 
-
 ## Expected Time
 
-1. **50MB** input, **1KB** record size (*51200* records)
+1. **50MB** input, **1KB** record size (_51200_ records)
 
-*Command*
+_Command_
 
 ```bash
 time DISTINCT=1 ./ExternalSort.exe -c 51200 -s 1024
 ```
 
-*Output*
+_Output_
+
 ```
 real    0m1.171s
 user    0m0.347s
 sys     0m0.125s
 ```
 
-2. **125MB** input, **1KB** record size (*128000* records)
+2. **125MB** input, **1KB** record size (_128000_ records)
 
-*Command*
+_Command_
 
 ```bash
 time DISTINCT=1 ./ExternalSort.exe -c 128000 -s 1024
 ```
 
-*Output*
+_Output_
+
 ```
 real    0m4.097s
 user    0m0.879s
 sys     0m0.373s
 ```
 
-3. **12GB** input, **1KB** record size (*12582912* records)
+3. **12GB** input, **1KB** record size (_12582912_ records)
 
-*Command*
+_Command_
 
 ```bash
 time DISTINCT=1 ./ExternalSort.exe -c 12582912 -s 1024
 ```
 
-*Output*
+_Output_
+
 ```
 real    6m42.670s
 user    1m29.719s
 sys     0m45.369s
 ```
 
-4. **120GB** input, **1KB** record size (*125829120* records)
+4. **120GB** input, **1KB** record size (_125829120_ records)
 
-*Command*
+_Command_
 
 ```bash
 time DISTINCT=1 ./ExternalSort.exe -c 125829120 -s 1024
 ```
 
-*Output*
+_Output_
+
 ```
 
 ```
