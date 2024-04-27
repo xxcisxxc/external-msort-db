@@ -13,7 +13,7 @@
 
 ### Use Docker
 
-1. Build Docker Image (*Inside the proejct directory*)
+1. Build Docker Image (*Inside the project directory*)
 
 ```bash
 docker build -t exmsort-project .
@@ -43,7 +43,7 @@ docker run -it --rm --name running-exsort --entrypoint /bin/bash exmsort-project
 ```
 
 Then compile & run with the following commands.
-  
+
 ### Compilation
 
 ```bash
