@@ -74,14 +74,39 @@ DISTINCT=0 ./ExternalSort.exe -c n_records -s record_size -o trace_file
 
 ## Code Structure
 
+### Overall Sort Algorithm
+
+```python
+if input <= cache_size:
+   quick_sort(input)
+else if cache_size < input <= mem_size:
+   inmem_merge(input)
+else if mem_size < input < 2 * mem_size:
+   # graceful degradation (mem -> ssd)
+   spill overloaded cache run in mem to ssd
+   inmem_merge(runs_in_mem, runs_in_ssd)
+else if 2 * mem_size <= input <= ssd_size:
+   external_merge(runs_in_ssd)
+else if ssd_size < input < 2 * ssd_size:
+   # graceful degradation (ssd -> hdd)
+   spill overloaded mem run in ssd to hdd
+   external_merge(runs_in_ssd, runs_in_hdd)
+else: # input >= 2 * ssd_size
+   nested_external_merge(runs_in_hdd)
+```
+
 (For Ranjitha)
 
 ## Contribution
 
 ### Xincheng
 
-1. sort
-2. ...
+1. `class Record` implementation and Device Emulation
+2. Sort Algorithm Implementation
+  - In Cache Sort
+  - In Memory Merge Sort
+  - External Merge Sort
+  - Nested Merge Sort in the Final Merge Step
 
 ### Ranjitha
 
