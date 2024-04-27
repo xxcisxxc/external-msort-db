@@ -9,7 +9,7 @@
 2. System
    - Tested on `Ubuntu 22.04.4 LTS`, `Ubuntu 20.04.6 LTS` and `Debian GNU/Linux 12 (bookworm)`
 3. Compiler
-   - Tested on `gcc-9`, `gcc-11`, `gcc-12`
+   - Tested on `gcc-9`, `gcc-11` and `gcc-12`
 
 ### Use Docker
 
@@ -83,13 +83,13 @@ else if cache_size < input <= mem_size:
    inmem_merge(input)
 else if mem_size < input < 2 * mem_size:
    # graceful degradation (mem -> ssd)
-   spill overloaded cache run in mem to ssd
+   spill overloaded cache-sized run in mem to ssd
    inmem_merge(runs_in_mem, runs_in_ssd)
 else if 2 * mem_size <= input <= ssd_size:
    external_merge(runs_in_ssd)
 else if ssd_size < input < 2 * ssd_size:
    # graceful degradation (ssd -> hdd)
-   spill overloaded mem run in ssd to hdd
+   spill overloaded mem-sized run in ssd to hdd
    external_merge(runs_in_ssd, runs_in_hdd)
 else: # input >= 2 * ssd_size
    nested_external_merge(runs_in_hdd)
@@ -103,11 +103,10 @@ else: # input >= 2 * ssd_size
 
 1. `class Record` implementation and Device Emulation
 2. Sort Algorithm Implementation
-
-- In Cache Sort
-- In Memory Merge Sort
-- External Merge Sort
-- Nested Merge Sort in the Final Merge Step
+   - In Cache Sort
+   - In Memory Merge Sort
+   - External Merge Sort
+   - Nested Merge Sort in the Final Merge Step
 
 ### Ranjitha
 
@@ -174,5 +173,7 @@ time DISTINCT=1 ./ExternalSort.exe -c 125829120 -s 1024
 _Output_
 
 ```
-
+real    109m11.856s
+user    16m5.668s
+sys     10m52.343s
 ```
