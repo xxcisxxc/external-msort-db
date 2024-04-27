@@ -12,7 +12,7 @@ static inline std::size_t fcache_nrecords() {
 } // fcache_nrecords
 
 static inline std::size_t cache_nrecords() {
-  return 8; // for testing
+  // return 8; // for testing
   std::size_t n_records = kCacheSize / (Record_t::bytes + sizeof(uint16_t));
   return n_records - n_records % 2;
 } // cache_nrecords
@@ -27,17 +27,17 @@ static inline std::size_t fmem_nrecords() {
 } // fmem_nrecords
 
 static inline std::size_t out_nrecords() {
-  return 16; // for testing
+  // return 16; // for testing
   return kCacheSize / Record_t::bytes;
 } // out_nrecords
 
 static inline std::size_t mmem_nrecords() {
-  return 32; // for testing
+  // return 32; // for testing
   return (kMemSize - kCacheSize) / Record_t::bytes;
 } // mmem_nrecords
 
 static inline std::size_t mem_nruns() {
-  return 4; // for testing
+  // return 4; // for testing
   return mmem_nrecords() / cache_nrecords();
 } // mem_nruns
 
@@ -50,7 +50,7 @@ static inline std::size_t fssd_nrecords() {
 } // fssd_nrecords
 
 static inline std::size_t ssd_nruns() {
-  return 8; // for testing
+  // return 8; // for testing
   return fssd_nrecords() / mem_nrecords();
 } // ssd_nruns
 
@@ -59,7 +59,7 @@ static inline std::size_t ssd_nrecords() {
 } // ssd_nrecords
 
 static inline std::size_t minm_nrecords() {
-  return 4; // for testing
+  // return 4; // for testing
   constexpr std::size_t min_size = 100 * 5 * 1024 * 1024 / 1000;
   return min_size / Record_t::bytes;
 } // minm_nrecords
