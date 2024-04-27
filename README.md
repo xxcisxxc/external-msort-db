@@ -22,8 +22,10 @@ docker build -t exmsort-project .
 2. Running Application
 
 ```bash
-docker run -it --rm --name running-exsort -v .:/usr/src/exmsort exmsort-project -c n_records -s record_size -o trace_file
+docker run -it --rm --name running-exsort -v .:/usr/src/exmsort -e DISTINCT=1 exmsort-project -c n_records -s record_size -o trace_file
 ```
+
+`DISTINCT=0` is no *Duplicate Elimination* and `DISTINCT=1` is *Duplicate Elimination*.
 
 3. Open Input, Output, Duplicate Data and Trace File
 
