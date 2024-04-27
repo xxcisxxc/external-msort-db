@@ -1,5 +1,6 @@
 #include "Scan.h"
 #include "Consts.h"
+#include "Device.h"
 #include "Iterator.h"
 #include "Record.h"
 #include "Utils.h"
@@ -123,12 +124,22 @@ void random_generate(Record_t &record) {
   }
 } // random_generate
 
+static WriteDevice input(kIn);
+
 bool ScanIterator::next() {
   TRACE(true);
 
   RecordArr_t records = _plan->_rcache;
 
+  static bool _final = false;
+
   if (_count >= _plan->_count) {
+    if (_count % _kRowCache != 0 && !_final) {
+      traceprintf("Write %lu records\n", (unsigned long)(_count % _kRowCache));
+      input.append_only(reinterpret_cast<char *>(records.data()),
+                        (_count % _kRowCache) * Record_t::bytes);
+      _final = true;
+    }
     return false;
   }
 
@@ -137,10 +148,12 @@ bool ScanIterator::next() {
   // witness for input
   (*(_plan->_inputWitnessRecord.get())).x_or(records[_count % _kRowCache]);
 
-  // traceprintf("produced %lu - %d %d\n", (unsigned long)(_count),
-  //             _plan->_rcache[_count % _kRowCache].key[0],
-  //             _plan->_rcache[_count % _kRowCache].key[1]);
-
   ++_count;
+
+  if (_count % _kRowCache == 0) {
+    input.append_only(reinterpret_cast<char *>(records.data()),
+                      _kRowCache * Record_t::bytes);
+  }
+
   return true;
 } // ScanIterator::next
