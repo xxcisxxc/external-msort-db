@@ -22,20 +22,20 @@ docker build -t exmsort-project .
 2. Running Application
 
 ```bash
-docker run -v .:/usr/src/exmsort -it --rm --name running-exsort -e DISTINCT=1 exmsort-project -c n_records -s record_size -o trace_file
+docker run -v ./data:/usr/src/exmsort/data -it --rm --name running-exsort -e DISTINCT=1 exmsort-project -c n_records -s record_size -o trace_file
 ```
 
 `DISTINCT=0` is _no_ Duplicate Elimination and `DISTINCT=1` is Duplicate Elimination.
 
 3. Open Input, Output, Duplicate Data and Trace File
 
-Files could be directly accessed inside project directory after running the above command.
+Files could be directly accessed inside `data` folder in project directory after running the above command.
 
 ```bash
-cat randin # input data
-cat hddout # output data
-cat dupout # duplicate data
-cat trace_file # trace file
+cat data/randin # input data
+cat data/hddout # output data
+cat data/dupout # duplicate data
+cat data/trace_file # trace file
 ```
 
 4. (_Optional_) If you want to run application directly inside docker
@@ -67,6 +67,8 @@ DISTINCT=0 ./ExternalSort.exe -c n_records -s record_size -o trace_file
 ```
 
 ### Interpret Output Files
+
+All output files are generated in `data` folder.
 
 1. `randin`: Input Random Data. _No Separator_ between records.
 2. `hddout`: Output Unsorted Data. _No Separator_ between records.

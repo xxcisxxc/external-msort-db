@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
     } else if (std::string(argv[i]) == "-s") {
       Record_t::bytes = std::stoul(argv[++i]);
     } else if (std::string(argv[i]) == "-o") {
-      tracefile = argv[++i];
+      tracefile = kDir / argv[++i];
     } else {
       throw std::invalid_argument("unknown option");
     }

@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <cstdio>
 #include <cstdlib>
+#include <filesystem>
 #include <fstream>
 #include <future>
 #include <string>
@@ -57,6 +58,8 @@ public:
   ~Timer() = default;
 };
 
+static inline std::filesystem::path kDir("data");
+
 class Device {
 private:
   double const _latency;       // in milliseconds
@@ -95,9 +98,12 @@ public:
       : _latency(latency), _bandwidth(bandwidth * 1e-3 * 1024 * 1024),
         _capacity(capacity == ULONG_MAX ? ULONG_MAX : capacity * 1024 * 1024),
         _used(0), _base(0), name(name_) {
+    if (std::filesystem::is_directory(kDir) == false) {
+      std::filesystem::create_directory(kDir);
+    }
     // Asynchronous I/O should relies on C++ async & future
-    _file.open(name, std::ios::in | std::ios::out | std::ios::binary |
-                         std::ios::trunc);
+    _file.open(kDir / name, std::ios::in | std::ios::out | std::ios::binary |
+                                std::ios::trunc);
     if (!_file.is_open()) {
       throw std::runtime_error("Failed to open file");
     }
@@ -232,7 +238,10 @@ private:
 
 public:
   ReadDevice(std::string name) {
-    _file.open(name, std::ios::in | std::ios::binary);
+    if (std::filesystem::is_directory(kDir) == false) {
+      std::filesystem::create_directory(kDir);
+    }
+    _file.open(kDir / name, std::ios::in | std::ios::binary);
     if (!_file.is_open()) {
       throw std::runtime_error("Failed to open file");
     }
@@ -255,7 +264,10 @@ private:
 
 public:
   WriteDevice(std::string name) {
-    _file.open(name, std::ios::out | std::ios::binary | std::ios::trunc);
+    if (std::filesystem::is_directory(kDir) == false) {
+      std::filesystem::create_directory(kDir);
+    }
+    _file.open(kDir / name, std::ios::out | std::ios::binary | std::ios::trunc);
     if (!_file.is_open()) {
       throw std::runtime_error("Failed to open file");
     }

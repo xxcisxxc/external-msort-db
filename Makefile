@@ -56,5 +56,5 @@ $(TEST_OBJS) : catch2/catch_amalgamated.hpp $(HDRS) $(TEST_SRCS)
 $(TEST_LIBS) : catch2/catch_amalgamated.hpp
 
 clean :
-	@rm -f $(OBJS) ExternalSort.exe ExternalSort.exe.stackdump trace* SSD HDD dupout hddout randin
+	@rm -rf $(OBJS) ExternalSort.exe ExternalSort.exe.stackdump trace data
 	@rm -f $(TEST_OBJS) $(TEST_DIR)/test_record $(TEST_LIBS)
