@@ -96,6 +96,59 @@ else: # input >= 2 * ssd_size
 ```
 
 (For Ranjitha)
+**Main Sort Logic & Graceful Degradation**
+Sort.cpp 
+
+- It the main sort logic. The logic here decides when to generate cache_sized mini runs, dram_sized_runs, ssd_sized_runs, spill cache/dram sized runs to make space for graceful degradation etc. 
+- It also decides the optimal input and output device page sizes for optimized I/O
+- Sorting with graceful degradation. Different cases are handled gracefully
+  input<= cache/dram size : sorting happens in memory and finally written out to hdd
+  dram < input < 2*dram : the cache sized runs are spilled to ssd to make space for new inputs. At the end, we make space for the runs spilled to ssd and merge all runs at once. 
+  input == 2*dram : The existing inmem runs are merged and written to ssd and the spilled inmem runs are read, merged and written back to ssd
+  input <= ssd : existing ssd runs are merged and writted to ssd
+  ssd < input < 2*ssd : Spill all the inmem sized runs to hdd. In the end, we make space for the runs spilled to hdd and merge all runs at once
+  input == 2*ssd : Existing ssd runs are merged and written to hdd. The spilled runs in hdd are read back to ssd, merged and written in bulk to hdd. 
+  input > 2*ssd : Doing multilevel merging if the fanin < the runs generated. Can be seen in Sort.cpp:157
+
+SortFunc.cpp 
+
+- It has the utility functions to perform the sorting and merging 
+- incache_sort 
+  Sorting the cache sized runs using the inbuilt quick sort
+- inmem_merge
+  To merge the cache sized runs in memory and write to the right output device. It used the Tournament tree of losers to perform merge. 
+- inmem_merge_spill
+  to merge runs efficiently when dram < input size < 2 * input_size
+- external_merge
+   to merge dram sized runs in ssd or ssd sized runs in hdd
+- external_merge_spill 
+  to merge runs efficiently when ssd < input size < 2 * ssd
+
+**Tournamet tree of Losers**
+LoserTree.h
+Implementation of loser tree. It used the MergeIndex records which maintains runId and the recordId to compare the actual records. 
+
+**Duplicate Removal**
+We are doing insort duplicate removal. At each merge step, we check if there are any duplicates and not include them in the output. We also keep record of the duplicate records and the number of times it occured to calculate the witness.
+
+Implementation can be seen in all the merge steps in SortFunc.cpp:251
+
+**Optimal Page Size**
+Utils.h:minm_nrecords this defines the optimal page size for hdd. We use this to calculate fanin and do multilevel merging
+
+For ssd we use dram_size/(number_of_dram_sized_runs_in_ssd) this is always greater than the latency*bandwidth for ssd. This ensured the optimal I/O latency and also maximal use of dram. 
+
+**Sort Order**
+After the sorting Validate.cpp reads the sorted output and validates the sort order. 
+
+**I/O to external devices**
+Device.h maintains the details of the device. It also has utils for read, write, append etc. 
+
+**Random input generation**
+Scan.cpp has the details of input generation
+
+**Record Structure**
+record.h has the record structure and all the overloaded methods for comparison, initialization, xor etc.
 
 ## Contribution
 
@@ -109,8 +162,10 @@ else: # input >= 2 * ssd_size
    - Nested Merge Sort in the Final Merge Step
 
 ### Ranjitha
-
-...
+1. LoserTree
+2. Duplicate Removal
+3. Naive final merge step
+4. Witness
 
 ## Expected Time
 
