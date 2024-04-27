@@ -7,7 +7,7 @@
 1. CPU Platform
    - Tested on `AMD EPYC 7763 64-Core Processor`, `Intel(R) Core(TM) i5-10600T CPU @ 2.40GHz` and `Intel(R) Xeon(R) CPU @ 2.30GHz`
 2. System
-   - Tested on `Ubuntu 22.04.4 LTS`, `Ubuntu 20.04.6 LTS`, `Debian GNU/Linux 12 (bookworm)`
+   - Tested on `Ubuntu 22.04.4 LTS`, `Ubuntu 20.04.6 LTS` and `Debian GNU/Linux 12 (bookworm)`
 3. Compiler
    - Tested on `gcc-9`, `gcc-11`, `gcc-12`
 
@@ -61,6 +61,12 @@ DISTINCT=1 ./ExternalSort.exe -c n_records -s record_size -o trace_file
 ```bash
 DISTINCT=0 ./ExternalSort.exe -c n_records -s record_size -o trace_file
 ```
+
+### Interpret Output Files
+
+1. `randin`: Input Random Data. *No Separator* between records.
+2. `hddout`: Output Unsorted Data. *No Separator* between records.
+3. `dupout`: Duplication Data with Count. For one entry, the first `record_size` bytes data is the duplicate record, the following `sizeof(uint64)t` integer is the count. *No Separator* between entries.
 
 ## Code Structure
 
