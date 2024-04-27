@@ -1,7 +1,7 @@
 .PHONY : all trace count clean test
 
 CPP=g++
-CPPOPT=-g -O0 # -D_DEBUG
+CPPOPT=-O3 # -D_DEBUG
 CPPFLAGS=$(CPPOPT) -Wall -Wextra -std=c++17 -I.
 
 # documents and scripts

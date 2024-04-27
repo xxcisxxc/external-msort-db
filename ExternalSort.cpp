@@ -13,7 +13,7 @@ int main(int argc, char *argv[]) {
   TRACE(true);
 
   std::size_t nRecords = 0;
-  std::string tracefile = "trace.log";
+  std::string tracefile = "/dev/stdout";
 
   for (int i = 1; i < argc; ++i) {
     if (std::string(argv[i]) == "-c") {
