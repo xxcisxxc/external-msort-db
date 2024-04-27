@@ -72,7 +72,7 @@ All output files are generated in `data` folder.
 
 1. `randin`: Input Random Data. _No Separator_ between records.
 2. `hddout`: Output Unsorted Data. _No Separator_ between records.
-3. `dupout`: Duplication Data with Count. For one entry, the first `record_size` bytes data is the duplicate record, the following `sizeof(uint64)t` integer is the count. _No Separator_ between entries.
+3. `dupout`: Duplication Data with Count. For one entry, the first `record_size` bytes data is the duplicate record, the following `sizeof(uint64_t)` integer is the count. _No Separator_ between entries.
 
 ## Code Structure
 
@@ -245,4 +245,25 @@ _Output_
 real    109m11.856s
 user    16m5.668s
 sys     10m52.343s
+```
+
+### Example Output with Witness and Sort Verification in `stdout` (not the trace file)
+
+```
+$ ./ExternalSort.exe -c 1234567 -s 1234 -o trace.log
+=======================
+# of records: 1234567
+# of bytes in record: 1234
+# of records in one cache run: 848
+# of cache runs in memory: 99
+# of records in one memory run: 83952
+# of records in output buffer: 849
+# of memory runs in SSD: 103
+# of records in one SSD run: 8647056
+=======================
+Validate.cpp:83:next Witness: yes, Sorted yes
+Iterator.cpp:19:run entire plan produced SORTED 922099 UNIQUE rows
+Scan.cpp:34:~ScanIterator produced 1234567 of 1234567 rows
+Sort.cpp:47:~SortIterator produced 1234567 of 1234567 rows
+Validate.cpp:33:~ValidateIterator validate 1234567 rows
 ```
