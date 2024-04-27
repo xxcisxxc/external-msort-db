@@ -2,7 +2,7 @@
 
 CPP=g++
 CPPOPT=-g -O0 # -D_DEBUG
-CPPFLAGS=$(CPPOPT) -Wall -Wextra -std=c++17
+CPPFLAGS=$(CPPOPT) -Wall -Wextra -std=c++17 -I.
 
 # documents and scripts
 DOCS=Tasks.txt
@@ -16,13 +16,11 @@ HDRS=	defs.h \
 		Iterator.h Scan.h Sort.h \
 		Record.h Device.h SortFunc.h Consts.h \
 		Utils.h Validate.h LoserTree.h
-SRCS=	defs.cpp Assert.cpp \
-		Iterator.cpp Scan.cpp Sort.cpp \
+SRCS=	Iterator.cpp Scan.cpp Sort.cpp \
 		SortFunc.cpp Validate.cpp
 
 # compilation targets
-OBJS=	defs.o Assert.o \
-		Iterator.o Scan.o Sort.o \
+OBJS=	Iterator.o Scan.o Sort.o \
 		SortFunc.o Validate.o
 
 ExternalSort.exe : Makefile $(OBJS) ExternalSort.cpp $(HDRS)

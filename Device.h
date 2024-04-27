@@ -1,5 +1,7 @@
 #pragma once
 
+#include <spdlog/spdlog.h>
+
 #include <chrono>
 #include <climits>
 #include <cstddef>
@@ -79,6 +81,8 @@ protected:
   }
 
 public:
+  const std::string name;
+
   /**
    * @brief Construct a new Device object
    *
@@ -86,11 +90,11 @@ public:
    * @param bandwidth MB/s
    * @param capacity MB
    */
-  Device(std::string name, double const latency, double const bandwidth,
+  Device(std::string name_, double const latency, double const bandwidth,
          std::size_t const capacity)
       : _latency(latency), _bandwidth(bandwidth * 1e-3 * 1024 * 1024),
         _capacity(capacity == ULONG_MAX ? ULONG_MAX : capacity * 1024 * 1024),
-        _used(0), _base(0) {
+        _used(0), _base(0), name(name_) {
     // Asynchronous I/O should relies on C++ async & future
     _file.open(name, std::ios::in | std::ios::out | std::ios::binary |
                          std::ios::trunc);
@@ -112,6 +116,9 @@ public:
     if (offset + bytes + _base > _used) {
       return -1;
     }
+    spdlog::info("STATE -> READ_RUN_PAGES_{0}: Read sorted run pages from the "
+                 "{0} device",
+                 name);
 
     _timer.start();
     _file.seekg(offset + _base);
@@ -121,12 +128,18 @@ public:
       return -1;
     }
 
-    if (_timer.get_duration_ms() < reach_time(bytes)) {
-      double const sleep_time = reach_time(bytes) - _timer.get_duration_ms();
+    double const reached = reach_time(bytes);
+    if (_timer.get_duration_ms() < reached) {
+      double const sleep_time = reached - _timer.get_duration_ms();
       std::size_t const sleep_time_us =
           static_cast<std::size_t>(sleep_time * 1000);
       std::this_thread::sleep_for(std::chrono::microseconds(sleep_time_us));
     }
+
+    spdlog::info(
+        "ACCESS -> A read to {} was made with size {} bytes and latency "
+        "{} us",
+        name, bytes, static_cast<std::size_t>(reached * 1000));
     return _file.gcount();
   }
 
@@ -143,6 +156,8 @@ public:
     if (bytes + offset + _base > _capacity) {
       return -1;
     }
+    spdlog::info("STATE -> SPILL_RUNS_{0}: Spill sorted runs to the {0} device",
+                 name);
 
     _timer.start();
     _file.clear();
@@ -162,13 +177,18 @@ public:
 
     _file.flush();
 
-    if (_timer.get_duration_ms() < reach_time(bytes)) {
-      double const sleep_time = reach_time(bytes) - _timer.get_duration_ms();
+    double const reached = reach_time(bytes);
+    if (_timer.get_duration_ms() < reached) {
+      double const sleep_time = reached - _timer.get_duration_ms();
       std::size_t const sleep_time_us =
           static_cast<std::size_t>(sleep_time * 1000);
       std::this_thread::sleep_for(std::chrono::microseconds(sleep_time_us));
     }
 
+    spdlog::info(
+        "ACCESS -> A write to {} was made with size {} bytes and latency "
+        "{} us",
+        name, bytes, static_cast<std::size_t>(reached * 1000));
     return count;
   }
 

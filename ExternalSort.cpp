@@ -1,4 +1,6 @@
-#include "Filter.h"
+#include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/spdlog.h>
+
 #include "Iterator.h"
 #include "Record.h"
 #include "Scan.h"
@@ -11,19 +13,24 @@ int main(int argc, char *argv[]) {
   TRACE(true);
 
   std::size_t nRecords = 0;
+  std::string tracefile = "trace.log";
 
   for (int i = 1; i < argc; ++i) {
     if (std::string(argv[i]) == "-c") {
       nRecords = std::stoul(argv[++i]);
     } else if (std::string(argv[i]) == "-s") {
       Record_t::bytes = std::stoul(argv[++i]);
+    } else if (std::string(argv[i]) == "-o") {
+      tracefile = argv[++i];
     } else {
       throw std::invalid_argument("unknown option");
     }
   } // for
 
-  // Plan * const plan = new ScanPlan (7);
-  // Plan *const plan = new SortPlan(new FilterPlan(new ScanPlan(kCount)));
+  auto file_logger = spdlog::basic_logger_mt("basic_logger", tracefile, true);
+  spdlog::set_default_logger(file_logger);
+  spdlog::set_pattern("[%H:%M:%S %z][%^%l%$] %v");
+
   printf("=======================\n");
   printf("# of records: %lu\n", nRecords);
   printf("# of bytes in record: %lu\n", Record_t::bytes);
@@ -42,6 +49,8 @@ int main(int argc, char *argv[]) {
   delete it;
 
   delete plan;
+
+  spdlog::shutdown();
 
   return 0;
 } // main

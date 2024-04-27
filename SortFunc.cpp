@@ -1,8 +1,10 @@
-#include "SortFunc.h"
+#include <spdlog/spdlog.h>
+
 #include "Consts.h"
 #include "Iterator.h"
 #include "LoserTree.h"
 #include "Record.h"
+#include "SortFunc.h"
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
@@ -49,6 +51,7 @@ void incache_sort(RecordArr_t &records, Index_t &index,
 
 void incache_sort(RecordArr_t const &records, RecordArr_t &out, Index_t &index,
                   RowCount const n_records) {
+  spdlog::info("STATE -> SORT_MINI_RUNS: Sort cache-size mini runs");
   auto begin = index.begin();
   auto end = index.begin() + n_records;
   if (end > index.end()) {
@@ -69,7 +72,9 @@ static WriteDevice dup_out(kDupOut); // record + uin64_t count
 
 void inmem_merge(RecordArr_t const &records, OutBuffer out, Device *hd,
                  Index_r &index, RunInfo run_info, bool dup_remove) {
-  static Record_t *_prev_record = reinterpret_cast<Record_t *>(nullptr);
+  spdlog::info("STATE -> MERGE_RUNS_{0}: Merge sorted runs on the {0} device",
+               hd->name);
+  static Record_t *_prev_record = nullptr;
   if (dup_remove && _prev_record == nullptr) {
     _prev_record = new Record_t;
   }
@@ -168,7 +173,10 @@ void inmem_merge(RecordArr_t const &records, OutBuffer out, Device *hd,
 void inmem_spill_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
                        Index_r &index, RunInfo run_info,
                        RowCount const n_runs_ssd, bool dup_remove) {
-  static Record_t *_prev_record = reinterpret_cast<Record_t *>(nullptr);
+  spdlog::info("STATE -> MERGE_RUNS_{0}: Merge sorted runs on the {0} device "
+               "with Graceful Degradation",
+               dev.hd_out->name);
+  static Record_t *_prev_record = nullptr;
   if (dup_remove && _prev_record == nullptr) {
     _prev_record = new Record_t;
   }
@@ -286,7 +294,9 @@ void inmem_spill_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
 
 void external_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
                     Index_r &index, ExRunInfo run_info, bool dup_remove) {
-  static Record_t *_prev_record = reinterpret_cast<Record_t *>(nullptr);
+  spdlog::info("STATE -> MERGE_RUNS_{0}: Merge sorted runs on the {0} device",
+               dev.hd_out->name);
+  static Record_t *_prev_record = nullptr;
   if (dup_remove && _prev_record == nullptr) {
     _prev_record = new Record_t;
   }
@@ -401,7 +411,10 @@ void external_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
 void external_spill_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
                           Device *dev_exin, Index_r &index, ExRunInfo run_info,
                           RowCount const n_runs_hdd, bool dup_remove) {
-  static Record_t *_prev_record = reinterpret_cast<Record_t *>(nullptr);
+  spdlog::info("STATE -> MERGE_RUNS_{0}: Merge sorted runs on the {0} device "
+               "with Graceful Degradation",
+               dev.hd_out->name);
+  static Record_t *_prev_record = nullptr;
   if (dup_remove && _prev_record == nullptr) {
     _prev_record = new Record_t;
   }
@@ -527,4 +540,4 @@ void external_spill_merge(RecordArr_t &records, OutBuffer out, DeviceInOut dev,
   if (duplicateCount > 0) {
     fill_run(dev.hd_out, out.out, duplicateCount);
   } // if
-} // external_merge
+} // external_spill_merge

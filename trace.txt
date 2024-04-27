@@ -1,0 +1,8 @@
+[01:41:38 +00:00][info] STATE -> SORT_MINI_RUNS: Sort cache-size mini runs
+[01:41:38 +00:00][info] STATE -> MERGE_RUNS_hddout: Merge sorted runs on the hddout device
+[01:41:38 +00:00][info] STATE -> SPILL_RUNS_hddout: Spill sorted runs to the hddout device
+[01:41:38 +00:00][info] ACCESS -> A write to hddout was made with size 37000 bytes and latency 5352 us
+[01:41:38 +00:00][info] STATE -> SPILL_RUNS_hddout: Spill sorted runs to the hddout device
+[01:41:38 +00:00][info] ACCESS -> A write to hddout was made with size 20 bytes and latency 5000 us
+[01:41:38 +00:00][info] STATE -> SPILL_RUNS_hddout: Spill sorted runs to the hddout device
+[01:41:38 +00:00][info] ACCESS -> A write to hddout was made with size 20 bytes and latency 5000 us
