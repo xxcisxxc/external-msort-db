@@ -71,7 +71,7 @@ DISTINCT=0 ./ExternalSort.exe -c n_records -s record_size -o trace_file
 All output files are generated in `data` folder.
 
 1. `randin`: Input Random Data. _No Separator_ between records.
-2. `hddout`: Output Unsorted Data. _No Separator_ between records.
+2. `hddout`: Output Sorted Data. _No Separator_ between records.
 3. `dupout`: Duplication Data with Count. For one entry, the first `record_size` bytes data is the duplicate record, the following `sizeof(uint64_t)` integer is the count. _No Separator_ between entries.
 
 ## Code Structure
